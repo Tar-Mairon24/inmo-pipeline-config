@@ -131,6 +131,7 @@ def call(Map params) {
             def testResult = sh(
                 script: '''
                     echo "Running tests..."
+                    export CGO_ENABLED=1
                     go test -v -race -coverprofile=coverage.out -coverpkg=./... ./test/...
                 ''',
                 returnStatus: true
