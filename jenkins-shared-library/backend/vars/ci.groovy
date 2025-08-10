@@ -131,7 +131,7 @@ def call(Map params) {
             def testResult = sh(
                 script: '''
                     echo "Running tests..."
-                    go test -v -race -coverprofile=coverage.out -coverpkg=./... ./test/... || true
+                    go test -v -race -coverprofile=coverage.out -coverpkg=./... ./test/...
                 ''',
                 returnStatus: true
             )
@@ -144,7 +144,7 @@ def call(Map params) {
             '''
 
             archiveArtifacts artifacts: 'coverage.out', allowEmptyArchive: true
-            
+
             // Then fail if tests failed
             if (testResult != 0) {
                 error 'Tests failed! Check the coverage report for details.'
