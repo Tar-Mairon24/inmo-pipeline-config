@@ -6,6 +6,8 @@ def call(Map params) {
             // Set up tools if needed (requires appropriate plugins)
             tool name: 'GoLatest', type: 'go'
             tool name: 'Default', type: 'dockerTool'
+            env.PATH = "${tool 'GoLatest'}/bin:${env.PATH}"
+            env.PATH = "${tool 'Default'}/bin:${env.PATH}" // If you need dockerTool in PATH
         }
 
         stage('Parameters') {
