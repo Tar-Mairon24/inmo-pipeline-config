@@ -36,8 +36,6 @@ def call(Map params) {
             checkout scm
 
             sh '''
-                echo "Checking out branch: $BRANCH_NAME_TARGET"
-                git checkout $BRANCH_NAME_TARGET
                 echo "Current branch: $(git rev-parse --abbrev-ref HEAD)"
                 echo "Last commit: $(git log -1 --pretty=format:'%h - %s')"
                 ls -la
