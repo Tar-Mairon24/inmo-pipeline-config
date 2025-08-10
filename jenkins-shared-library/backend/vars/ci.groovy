@@ -135,6 +135,8 @@ def call(Map params) {
                 ''',
                 returnStatus: true
             )
+            sh 'ls -la'
+            sh 'ls -la coverage.out || echo "No coverage report generated"'
             // Always generate coverage report
             sh '''
                 go tool cover -html=coverage.out -o coverage.html
@@ -145,6 +147,15 @@ def call(Map params) {
                 error 'Tests failed! Check the coverage report for details.'
             }
             echo 'Tests completed successfully.'
+        }
+
+        stage('Cleanup') {
+            sh '''
+                echo "🧹 Cleaning up temporary files..."
+                rm -f app.toml .env
+                rm -rf config-repo
+                echo "✅ Cleanup completed"
+            '''
         }
     }
 }
