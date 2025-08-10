@@ -93,6 +93,8 @@ def call(Map params) {
                         ls -la config-repo/tools/ || echo "Tools directory not found"
                         exit 1
                     fi
+                    ls -la
+                    ls -la config-repo/tools 
                     echo "Running conversion..."
                     cd config-repo/tools/
                     go run toml2env.go app.toml ../../.env
