@@ -3,23 +3,25 @@ import hudson.*;
 def call(Map params) {
     node('Agent') {
         stage('Set up tools') {
-            // Set up tools if needed (requires appropriate plugins)
-            tool name: 'GoLatest', type: 'go'
-            tool name: 'Default', type: 'dockerTool'
-            env.PATH = "${tool 'GoLatest'}/bin:${env.PATH}:${tool 'Default'}/bin:${env.PATH}"
-            sh '''
-                echo "Running golangci-lint..."
-                if ! command -v golangci-lint >/dev/null 2>&1; then
-                    echo "golangci-lint not found, installing..."
-                    curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.59.1
-                    export PATH=$(go env GOPATH)/bin:$PATH
-                fi
-            '''
+            script {
+                // Only call tool() once per tool and prepend both to PATH
+                def goHome = tool name: 'GoLatest', type: 'go'
+                def dockerHome = tool name: 'Default', type: 'dockerTool'
+                env.PATH = "${goHome}/bin:${dockerHome}/bin:${env.PATH}"
+
+                // Install golangci-lint if not present in PATH
+                if (!fileExists("${goHome}/bin/golangci-lint")) {
+                    sh """
+                        curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ${goHome}/bin v1.59.1
+                    """
+                }
+            }
             sh '''
                 echo "Go version: $(go version)"
                 echo "Docker version: $(docker --version)"
                 echo "PATH: $PATH"
                 echo "GOPATH: $(go env GOPATH)"
+                which golangci-lint || echo "golangci-lint not found in PATH"
             '''
         }
 
