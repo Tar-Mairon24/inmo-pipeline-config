@@ -1,6 +1,6 @@
 import hudson.*;
 
-def call(map params) {
+def call(Map params) {
     pipeline {
         agent {
             node {
