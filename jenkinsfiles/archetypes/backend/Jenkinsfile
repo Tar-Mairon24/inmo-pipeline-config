@@ -1,0 +1,3 @@
+@library(['archetype-backend-library']) _
+
+process([PipelineKind: utils.getPipelineKind()])
