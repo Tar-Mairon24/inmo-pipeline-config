@@ -154,10 +154,10 @@ def call(Map params) {
 
         stage('Cleanup') {
             sh '''
-                echo "🧹 Cleaning up temporary files..."
+                echo "Cleaning up temporary files..."
                 rm -f app.toml .env
                 rm -rf config-repo
-                echo "✅ Cleanup completed"
+                echo "Cleanup completed"
             '''
         }
     }
