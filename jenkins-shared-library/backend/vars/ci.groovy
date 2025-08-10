@@ -6,8 +6,21 @@ def call(Map params) {
             // Set up tools if needed (requires appropriate plugins)
             tool name: 'GoLatest', type: 'go'
             tool name: 'Default', type: 'dockerTool'
-            env.PATH = "${tool 'GoLatest'}/bin:${env.PATH}"
-            env.PATH = "${tool 'Default'}/bin:${env.PATH}" // If you need dockerTool in PATH
+            env.PATH = "${goHome}/bin:${dockerHome}/bin:${env.PATH}"
+            sh '''
+                echo "Running golangci-lint..."
+                if ! command -v golangci-lint >/dev/null 2>&1; then
+                    echo "golangci-lint not found, installing..."
+                    curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.59.1
+                    export PATH=$(go env GOPATH)/bin:$PATH
+                fi
+            '''
+            sh '''
+                echo "Go version: $(go version)"
+                echo "Docker version: $(docker --version)"
+                echo "PATH: $PATH"
+                echo "GOPATH: $(go env GOPATH)"
+            '''
         }
 
         stage('Parameters') {
@@ -137,22 +150,28 @@ def call(Map params) {
             )
             sh 'ls -la'
             sh 'ls -la coverage.out || echo "No coverage report generated"'
-            // Always generate coverage report
+
             sh '''
                 go tool cover -html=coverage.out -o coverage.html
                 echo "Coverage report generated: coverage.html" 
             '''
 
-            archiveArtifacts artifacts: 'coverage.out', allowEmptyArchive: true
+            archiveArtifacts artifacts: 'coverage.html', allowEmptyArchive: true
 
-            // Then fail if tests failed
             if (testResult != 0) {
                 error 'Tests failed! Check the coverage report for details.'
             }
             echo 'Tests completed successfully.'
         }
 
-        stage('Cleanup') {
+        stage('Lint') {
+            sh '''
+                echo "Running linter..."
+                golangci-lint run ./...
+            '''
+        }
+
+        stage('Post declarative action') {
             sh '''
                 echo "Cleaning up temporary files..."
                 rm -f app.toml .env
