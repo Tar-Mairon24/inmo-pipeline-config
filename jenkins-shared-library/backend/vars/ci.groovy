@@ -6,7 +6,7 @@ def call(Map params) {
             // Set up tools if needed (requires appropriate plugins)
             tool name: 'GoLatest', type: 'go'
             tool name: 'Default', type: 'dockerTool'
-            env.PATH = "${goHome}/bin:${dockerHome}/bin:${env.PATH}"
+            env.PATH = "${tool 'GoLatest'}/bin:${env.PATH}:${tool 'Default'}/bin:${env.PATH}"
             sh '''
                 echo "Running golangci-lint..."
                 if ! command -v golangci-lint >/dev/null 2>&1; then
