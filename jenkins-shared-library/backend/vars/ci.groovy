@@ -127,7 +127,8 @@ def call(Map params) {
 
                 sh '''
                     echo "Removing config-repo to avoid Go modules issues..."
-                    rm -rf config-repo
+                    rm -rf config-repo || echo "No config-repo directory to remove"
+                    rm -rf config-repo@temp || echo "No config-repo@temp directory to remove"
                     ls -la
                 '''
             }
