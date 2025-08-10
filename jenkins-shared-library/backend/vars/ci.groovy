@@ -86,7 +86,7 @@ def call(Map params) {
 
                 sh """
                     echo "Converting TOML to .env format..."
-                    cp "${configFile}" app.toml
+                    cp "${configFile}" config-repo/tools/app.toml
                     if [ ! -f "config-repo/tools/toml2env.go" ]; then
                         echo "❌ Converter not found: config-repo/tools/toml2env.go"
                         echo "Available files in tools directory:"
