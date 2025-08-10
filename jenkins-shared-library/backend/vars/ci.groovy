@@ -142,6 +142,9 @@ def call(Map params) {
                 go tool cover -html=coverage.out -o coverage.html
                 echo "Coverage report generated: coverage.html" 
             '''
+
+            archiveArtifacts artifacts: 'coverage.out', allowEmptyArchive: true
+            
             // Then fail if tests failed
             if (testResult != 0) {
                 error 'Tests failed! Check the coverage report for details.'
