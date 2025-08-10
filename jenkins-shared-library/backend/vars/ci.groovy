@@ -13,7 +13,7 @@ def call(Map params) {
 
         tools {
             go 'GoLatest'
-            docker 'default'
+            dockerTool 'default'
         }
 
         stages {
