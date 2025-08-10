@@ -48,7 +48,7 @@ def call(Map params) {
                 branches: [[name: 'main']],
                 userRemoteConfigs: [[
                     url: 'https://github.com/Tar-Mairon24/inmo-pipeline-config.git',
-                    credentialsId: 'GitHub_Token'
+                    credentialsId: 'Github_Token'
                 ]],
                 extensions: [
                     [$class: 'RelativeTargetDirectory', relativeTargetDir: 'config-repo']
