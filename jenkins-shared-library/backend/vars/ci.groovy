@@ -4,12 +4,10 @@ def call(Map params) {
     node('Agent') {
         stage('Set up tools') {
             script {
-                // Only call tool() once per tool and prepend both to PATH
                 def goHome = tool name: 'GoLatest', type: 'go'
                 def dockerHome = tool name: 'Default', type: 'dockerTool'
                 env.PATH = "${goHome}/bin:${dockerHome}/bin:${env.PATH}"
 
-                // Install golangci-lint if not present in PATH
                 if (!fileExists("${goHome}/bin/golangci-lint")) {
                     sh """
                         curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ${goHome}/bin v1.59.1
@@ -140,6 +138,13 @@ def call(Map params) {
                 error 'Vulnerability scan found issues! Please review and fix before proceeding.'
             }
             echo 'Vulnerability scan passed successfully.'
+        }
+
+        stage('Prepare Go Modules') {
+            sh '''
+                echo "Downloading Go module dependencies..."
+                go mod download
+            '''
         }
 
         stage('Test') {
