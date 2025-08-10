@@ -47,7 +47,7 @@ def call(Map params) {
                 $class: 'GitSCM',
                 branches: [[name: 'main']],
                 userRemoteConfigs: [[
-                    url: 'https://github.com/Tar-Mairon24/inmo-pipeline-config.git',
+                    url: 'https://github.com/Tar-Mairon24/inmo-pipeline-properties.git',
                     credentialsId: 'Github_Token'
                 ]],
                 extensions: [
