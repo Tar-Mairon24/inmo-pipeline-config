@@ -1,102 +1,147 @@
 import hudson.*;
 
 def call(Map params) {
-    pipeline {
-        agent {
-            node {
-                label 'Agent'
-            }
-        }
-        environment {
-            ENV = readProperties file: '.env-develop', encoding: 'UTF-8'
+    node('Agent') {
+        stage('Set up tools') {
+            // Set up tools if needed (requires appropriate plugins)
+            tool name: 'GoLatest', type: 'go'
+            tool name: 'Default', type: 'dockerTool'
         }
 
-        tools {
-            go 'GoLatest'
-            dockerTool 'Default'
+        stage('Parameters') {
+            sh 'whoami'
+
+            def pipelineKind = utils.getPipelineKind()
+
+            if (pipelineKind == 'pr') {
+                env.BRANCH_NAME_TARGET = env.CHANGE_TARGET
+                env.BRANCH_NAME_ORIGIN = env.CHANGE_BRANCH
+            } else if (pipelineKind == 'branch') {
+                env.BRANCH_NAME_TARGET = env.BRANCH_NAME
+                env.BRANCH_NAME_ORIGIN = env.BRANCH_NAME
+            } else {
+                error "Unsupported PipelineKind: ${pipelineKind}"
+            }
+
+            env.ENVIRONMENT_NAME = utils.getEnviromentName(env.BRANCH_NAME_TARGET)
+
+            sh '''
+                echo "BRANCH_NAME_TARGET: $BRANCH_NAME_TARGET"
+                echo "BRANCH_NAME_ORIGIN: $BRANCH_NAME_ORIGIN"
+                echo "ENVIRONMENT_NAME: $ENVIRONMENT_NAME"
+            '''
         }
 
-        stages {
-            stage("Parameters"){
-                steps{
-                    script {
-                        sh "whoami"
+        stage('Checkout SCM') {
+            checkout scm
 
-                        def pipelineKind = utils.getPipelineKind();
+            sh '''
+                echo "Checking out branch: $BRANCH_NAME_TARGET"
+                git checkout $BRANCH_NAME_TARGET
+                echo "Current branch: $(git rev-parse --abbrev-ref HEAD)"
+                echo "Last commit: $(git log -1 --pretty=format:'%h - %s')"
+                ls -la
+            '''
+        }
 
-                        if(pipelineKind == "pr") {
-                            env.BRANCH_NAME_TARGET = env.CHANGE_TARGET
-                            env.BRANCH_NAME_ORIGIN = env.CHANGE_BRANCH
-                        }else if(pipelineKind == "branch") {
-                            env.BRANCH_NAME_TARGET = env.BRANCH_NAME
-                            env.BRANCH_NAME_ORIGIN = env.BRANCH_NAME
-                        } else {
-                            error "Unsupported PipelineKind: ${pipelineKind}"
-                        }
+        stage('Load configuration') {
+            checkout([
+                $class: 'GitSCM',
+                branches: [[name: 'main']],
+                userRemoteConfigs: [[
+                    url: 'https://github.com/Tar-Mairon24/inmo-pipeline-config.git',
+                    credentialsId: 'GitHub_Token'
+                ]],
+                extensions: [
+                    [$class: 'RelativeTargetDirectory', relativeTargetDir: 'config-repo']
+                ]
+            ])
 
-                        env.ENVIRONMENT_NAME = utils.getEnviromentName(env.BRANCH_NAME_TARGET)
+            sh '''
+                echo "Configuration repository checked out."
+                ls -la
+                echo ""
+                echo "Configuration files from config-repo/:"
+                ls -la config-repo/
+            '''
+        }
 
-                        sh '''
-                            echo "BRANCH_NAME_TARGET: $BRANCH_NAME_TARGET"
-                            echo "BRANCH_NAME_ORIGIN: $BRANCH_NAME_ORIGIN"
-                            echo "ENVIRONMENT_NAME: $ENVIRONMENT_NAME"
-                        '''
-                    }
-                }
+        stage('Parsing configuration') {
+            script {
+                def configDir = "config-repo/backend/${env.ENVIRONMENT_NAME}"
+                def configFile = "${configDir}/app.toml"
+
+                sh """
+                    echo "Looking for configuration: ${configFile}"
+                    if [ ! -f "${configFile}" ]; then
+                        echo "Configuration file not found: ${configFile}"
+                        echo "Available backend configurations:"
+                        find config-repo/backend/ -name "*.toml" || echo "No TOML files found"
+                        exit 1
+                    fi
+                    echo "Found configuration file"
+                    echo "Content preview:"
+                    head -20 "${configFile}"
+                """
+
+                sh """
+                    echo "Converting TOML to .env format..."
+                    cp "${configFile}" app.toml
+                    if [ ! -f "config-repo/tools/toml2env.go" ]; then
+                        echo "❌ Converter not found: config-repo/tools/toml2env.go"
+                        echo "Available files in tools directory:"
+                        ls -la config-repo/tools/ || echo "Tools directory not found"
+                        exit 1
+                    fi
+                    echo"Running conversion..."
+                    cd config-repo/tools/
+                    go run toml2env.go app.toml ../../.env
+                    echo "Conversion complete. Generated .env file:"
+                    ls -la
+                    if [ ! -f .env ]; then
+                        echo "Error: .env file not generated."
+                        exit 1
+                    fi
+                    echo "Environment variables loaded from .env file."
+                    echo "Conversion complete"
+                    echo "Environment variables loaded (\$(wc -l < .env) variables):"
+                    head -10 .env
+                """
             }
+        }
 
-            stage("Checkout") {
-                steps {
-                    checkout scm
-                }
+        stage('Security Scan') {
+            def vulnResult = sh(
+                script: '''
+                    echo "Running vulnerability scan..."
+                    go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+                ''',
+                returnStatus: true
+            )
+            if (vulnResult != 0) {
+                error 'Vulnerability scan found issues! Please review and fix before proceeding.'
             }
+            echo 'Vulnerability scan passed successfully.'
+        }
 
-            stage("Security Scan") {
-                steps {
-                    script {
-                        def vulnResult = sh(
-                            script: '''
-                                echo "Running vulnerability scan..."
-                                go run golang.org/x/vuln/cmd/govulncheck@latest ./...
-                            ''',
-                            returnStatus: true
-                        )
-                        
-                        if (vulnResult != 0) {
-                            error "Vulnerability scan found issues! Please review and fix before proceeding."
-                        }
-                        
-                        echo "Vulnerability scan passed successfully."
-                    }
-                }
+        stage('Test') {
+            def testResult = sh(
+                script: '''
+                    echo "Running tests..."
+                    go test -v -race -coverprofile=coverage.out -coverpkg=./... ./test/... || true
+                ''',
+                returnStatus: true
+            )
+            // Always generate coverage report
+            sh '''
+                go tool cover -html=coverage.out -o coverage.html
+                echo "Coverage report generated: coverage.html" 
+            '''
+            // Then fail if tests failed
+            if (testResult != 0) {
+                error 'Tests failed! Check the coverage report for details.'
             }
-
-            stage("Test") {
-                steps {
-                    script {
-                        def testResult = sh(
-                            script: '''
-                                echo "Running tests..."
-                                go test -v -race -coverprofile=coverage.out -coverpkg=./... ./test/... || true
-                            ''',
-                            returnStatus: true
-                        )
-                        
-                        // Always generate coverage report
-                        sh '''
-                            go tool cover -html=coverage.out -o coverage.html
-                            echo "Coverage report generated: coverage.html" 
-                        '''
-                        
-                        // Then fail if tests failed
-                        if (testResult != 0) {
-                            error "Tests failed! Check the coverage report for details."
-                        }
-                        
-                        echo "Tests completed successfully."
-                    }
-                }
-            }
+            echo 'Tests completed successfully.'
         }
     }
 }
