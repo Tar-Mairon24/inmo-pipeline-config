@@ -122,8 +122,23 @@ def call(Map params) {
                     echo "Conversion complete"
                     echo "Environment variables loaded (\$(wc -l < .env) variables):"
                     head -10 .env
+                    cat .env
                 """
+
+                sh '''
+                    echo "Removing config-repo to avoid Go modules issues..."
+                    rm -rf config-repo
+                    ls -la
+                '''
             }
+        }
+
+        stage('Prepare Go Modules') {
+            sh '''
+                echo "Downloading Go module dependencies..."
+                go mod download
+                go mod tidy
+            '''
         }
 
         stage('Security Scan') {
@@ -138,13 +153,6 @@ def call(Map params) {
                 error 'Vulnerability scan found issues! Please review and fix before proceeding.'
             }
             echo 'Vulnerability scan passed successfully.'
-        }
-
-        stage('Prepare Go Modules') {
-            sh '''
-                echo "Downloading Go module dependencies..."
-                go mod download
-            '''
         }
 
         stage('Test') {
