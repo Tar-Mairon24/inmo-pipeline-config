@@ -99,6 +99,7 @@ def call(Map params) {
                     cd config-repo/tools/
                     go run toml2env.go app.toml ../../.env
                     echo "Conversion complete. Generated .env file:"
+                    cd ../../
                     ls -la
                     if [ ! -f .env ]; then
                         echo "Error: .env file not generated."
