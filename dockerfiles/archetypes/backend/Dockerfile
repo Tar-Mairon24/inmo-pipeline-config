@@ -15,6 +15,8 @@ FROM alpine:latest
 
 WORKDIR /app
 
+RUN adduser -D -s /bin/sh appuser
+
 COPY --from=builder /app/main .
 
 RUN chown appuser:appuser main
