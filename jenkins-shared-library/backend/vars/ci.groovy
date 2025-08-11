@@ -10,7 +10,7 @@ def call(Map params) {
             env.PATH = "${goHome}/bin:${dockerHome}/bin:${env.PATH}"
             
             echo "Setting up golangci-lint..."
-            echo "GOPATH: $(go env GOPATH)"
+            sh 'echo "GOPATH: $(go env GOPATH)"'
             
             sh  "rm -f ${goHome}/bin/golangci-lint || echo 'No existing golangci-lint to remove'"
                 
@@ -19,13 +19,17 @@ def call(Map params) {
             def goPath = sh(script: 'go env GOPATH', returnStdout: true).trim()
             env.PATH = "${goPath}/bin:${env.PATH}:${dockerHome}/bin"
             
-            echo "Tool verification:"
-            echo "Go version: $(go version)"
-            echo "Docker version: $(docker --version)"
-            echo "Docker Compose version: $(docker compose version || docker-compose --version)"
-            echo "golangci-lint version: $(golangci-lint --version)"
-            echo "PATH: $PATH"
-            echo "GOPATH: $(go env GOPATH)"
+            echo "=== Tool Setup Complete ==="
+
+            sh '''
+                echo "=== Tool Verification ==="
+                echo "Go version: $(go version)"
+                echo "Docker version: $(docker --version)"
+                echo "Docker Compose version: $(docker compose version || docker-compose --version)"
+                echo "golangci-lint version: $(golangci-lint --version)"
+                echo "PATH: $PATH"
+                echo "GOPATH: $(go env GOPATH)"
+            '''
         }
 
         stage('Parameters') {
@@ -45,16 +49,15 @@ def call(Map params) {
 
             env.ENVIRONMENT_NAME = utils.getEnviromentName(env.BRANCH_NAME_TARGET)
 
-            sh '''
-                echo "BRANCH_NAME_TARGET: $BRANCH_NAME_TARGET"
-                echo "BRANCH_NAME_ORIGIN: $BRANCH_NAME_ORIGIN"
-                echo "ENVIRONMENT_NAME: $ENVIRONMENT_NAME"
-            '''
+            echo "BRANCH_NAME_TARGET: $BRANCH_NAME_TARGET"
+            echo "BRANCH_NAME_ORIGIN: $BRANCH_NAME_ORIGIN"
+            echo "ENVIRONMENT_NAME: $ENVIRONMENT_NAME"
         }
 
         stage('Checkout SCM') {
             checkout scm
 
+            echo "Checked out branch: ${env.BRANCH_NAME}"
             sh '''
                 echo "Current branch: $(git rev-parse --abbrev-ref HEAD)"
                 echo "Last commit: $(git log -1 --pretty=format:'%h - %s')"
@@ -75,84 +78,35 @@ def call(Map params) {
                 ]
             ])
 
-            sh '''
                 echo "Configuration repository checked out."
-                ls -la
-                echo ""
+                sh 'ls -la'
                 echo "Configuration files from config-repo/:"
-                ls -la config-repo/
-            '''
+                sh 'ls -la config-repo/'
         }
 
         stage('Parsing configuration') {
             script {
                 def configDir = "config-repo/backend/${env.ENVIRONMENT_NAME}"
-                def configFile = "${configDir}/app.toml"
-
-                sh """
-                    echo "Looking for configuration: ${configFile}"
-                    if [ ! -f "${configFile}" ]; then
-                        echo "Configuration file not found: ${configFile}"
-                        echo "Available backend configurations:"
-                        find config-repo/backend/ -name "*.toml" || echo "No TOML files found"
-                        exit 1
-                    fi
-                    echo "Found configuration file"
-                    echo "Content preview:"
-                    head -20 "${configFile}"
-                """
-
-                sh """
-                    echo "Converting TOML to .env format..."
-                    cp "${configFile}" config-repo/tools/app.toml
-                    if [ ! -f "config-repo/tools/toml2env.go" ]; then
-                        echo "❌ Converter not found: config-repo/tools/toml2env.go"
-                        echo "Available files in tools directory:"
-                        ls -la config-repo/tools/ || echo "Tools directory not found"
-                        exit 1
-                    fi
-                    ls -la
-                    ls -la config-repo/tools 
-                    echo "Running conversion..."
-                    cd config-repo/tools/
-                    go run toml2env.go app.toml ../../.env
-                    echo "Conversion complete. Generated .env file:"
-                    cd ../../
-                    ls -la
-                    if [ ! -f .env ]; then
-                        echo "Error: .env file not generated."
-                        exit 1
-                    fi
-                    echo "Environment variables loaded from .env file."
-                    echo "Conversion complete"
-                    echo "Environment variables loaded (\$(wc -l < .env) variables):"
-                    head -10 .env
-                    cat .env
-                """
-
-                sh '''
-                    echo "Removing config-repo to avoid Go modules issues..."
-                    rm -rf config-repo || echo "No config-repo directory to remove"
-                    rm -rf config-repo@* || echo "No config-repo@temp directory to remove"
-                    ls -la
-                '''
+                def success = utils.toml2env(configDir)
+                if (!success) {
+                    error "Failed to parse configuration from ${configDir}"
+                }
+                sh 'ls -la'
             }
         }
 
         stage('Prepare Go Modules') {
+            echo "Downloading Go module dependencies..."
             sh '''
-                echo "Downloading Go module dependencies..."
                 go mod download
                 go mod tidy
             '''
         }
 
         stage('Security Scan') {
+            echo "Running vulnerability scan..."
             def vulnResult = sh(
-                script: '''
-                    echo "Running vulnerability scan..."
-                    go run golang.org/x/vuln/cmd/govulncheck@latest ./...
-                ''',
+                script: 'go run golang.org/x/vuln/cmd/govulncheck@latest ./...',
                 returnStatus: true
             )
             if (vulnResult != 0) {
@@ -162,20 +116,16 @@ def call(Map params) {
         }
 
         stage('Test') {
+            echo "Running tests..."
             def testResult = sh(
-                script: '''
-                    echo "Running tests..."
-                    go test -v  -coverprofile=coverage.out -coverpkg=./... ./test/...
-                ''',
+                script: 'go test -v  -coverprofile=coverage.out -coverpkg=./... ./test/...',
                 returnStatus: true
             )
             sh 'ls -la'
             sh 'ls -la coverage.out || echo "No coverage report generated"'
 
-            sh '''
-                go tool cover -html=coverage.out -o coverage.html
-                echo "Coverage report generated: coverage.html" 
-            '''
+            sh 'go tool cover -html=coverage.out -o coverage.html'
+            echo "Coverage report generated: coverage.html" 
 
             archiveArtifacts artifacts: 'coverage.html', allowEmptyArchive: true
 
@@ -186,10 +136,8 @@ def call(Map params) {
         }
 
         stage('Lint') {
-            sh '''
-                echo "Running linter..."
-                golangci-lint run ./...
-            '''
+            echo "Running linter..."
+            sh 'golangci-lint run ./...'
         }
 
         stage('Dockerfile Setup') {
@@ -205,20 +153,24 @@ def call(Map params) {
                 ]
             ])
 
+            echo "Dockerfiles repository checked out."
             sh '''
-                echo "Dockerfiles repository checked out."
                 ls -la
                 echo ""
                 echo "Dockerfiles-repo/:"
                 ls -la dockerfiles-repo/dockerfiles/archetypes/backend/
-                echo ""
-                echo "Copying Dockerfile to project root..."
+            '''
+            echo "Copying Dockerfile to project root..."
+            sh '''
                 cp dockerfiles-repo/dockerfiles/archetypes/backend/Dockerfile .
                 if [ ! -f Dockerfile ]; then
                     echo "Error: Dockerfile not found after copy."
                     exit 1
                 fi
                 echo "Dockerfile copied successfully."
+            '''
+            echo "Dockerfile setup completed."
+            sh '''
                 ls -la Dockerfile
                 rm -rf dockerfiles-repo || echo "No dockerfiles-repo directory to remove"
                 rm -rf dockerfiles-repo@* || echo "No dockerfiles-repo@tmp directory to remove"
@@ -227,25 +179,23 @@ def call(Map params) {
         }
 
         stage("Build Image") {
-             script {
+            script {
                 def gitCommit = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
                 def imageName = "inmo-backend"
                 def imageTag = "${imageName}:${gitCommit}"
                 
-                sh """
-                    echo "Building Docker image with commit hash: ${gitCommit}"
-                    echo "Git commit: ${gitCommit}"
-                    echo "Build number: ${env.BUILD_NUMBER}"
+                echo "Building Docker image with commit hash: ${gitCommit}"
+                echo "Git commit: ${gitCommit}"
+                echo "Build number: ${env.BUILD_NUMBER}"
+
+                sh "docker build -t ${imageTag} -t ${imageName}:latest ."
                     
-                    # Build with both commit tag AND latest tag
-                    docker build -t ${imageTag} -t ${imageName}:latest .
+                echo "Docker image built successfully with tags:"
+                echo "  - ${imageTag} (archived version)"
+                echo "  - ${imageName}:latest (current version)"
                     
-                    echo "Docker image built successfully with tags:"
-                    echo "  - ${imageTag} (archived version)"
-                    echo "  - ${imageName}:latest (current version)"
-                    
-                    docker images | grep ${imageName}
-                """
+                sh "docker images | grep ${imageName}"
+
                 env.DOCKER_IMAGE_TAG = gitCommit
 
                 utils.dockerCleanup(imageName)
@@ -253,12 +203,10 @@ def call(Map params) {
         }
 
         stage('Post declarative action') {
-            sh '''
-                echo "Cleaning up temporary files..."
-                rm -f app.toml .env
-                rm -rf config-repo
-                echo "Cleanup completed"
-            '''
+            echo "Cleaning up temporary files..."
+            sh 'rm -f app.toml .env'
+            sh 'rm -rf config-repo'
+            echo "Cleanup completed"
         }
     }
 }
