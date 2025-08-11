@@ -5,20 +5,34 @@ def call(Map params) {
         stage('Set up tools') {
             def goHome = tool name: 'GoLatest', type: 'go'
             def dockerHome = tool name: 'Default', type: 'dockerTool'
-
+            
+            // Set PATH first, before running any shell commands
+            env.PATH = "${goHome}/bin:${dockerHome}/bin:${env.PATH}"
+            
             sh '''
-                #rm $(go env GOPATH)/bin/golangci-lint
+                echo "Setting up golangci-lint..."
+                echo "GOPATH: $(go env GOPATH)"
+                
+                # Remove existing golangci-lint if present
+                rm -f $(go env GOPATH)/bin/golangci-lint || echo "No existing golangci-lint to remove"
+                
                 curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b $(go env GOPATH)/bin v2.3.1
+                # Verify installation
                 which golangci-lint || echo "golangci-lint installation failed"
                 golangci-lint --version || echo "golangci-lint version check failed"
-            '''
-                env.PATH = "${sh(script: 'go env GOPATH', returnStdout: true).trim()}/bin:${goHome}/bin:${dockerHome}/bin:${env.PATH}"   
-            sh '''
-                echo "Go version: $(go version)"
-                echo "Docker version: $(docker --version)"
-                echo "PATH: $PATH"
-                echo "GOPATH: $(go env GOPATH)"
-                which golangci-lint || echo "golangci-lint not found in PATH"
+                '''
+                
+                // Update PATH to include GOPATH/bin first (in case it's not already there)
+                def goPath = sh(script: 'go env GOPATH', returnStdout: true).trim()
+                env.PATH = "${goPath}/bin:${env.PATH}"
+                
+                sh '''
+                    echo "Tool verification:"
+                    echo "Go version: $(go version)"
+                    echo "Docker version: $(docker --version)"
+                    echo "golangci-lint version: $(golangci-lint --version)"
+                    echo "PATH: $PATH"
+                    echo "GOPATH: $(go env GOPATH)"
                 '''
         }
 
