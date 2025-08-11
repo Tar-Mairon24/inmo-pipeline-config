@@ -70,7 +70,7 @@ def toml2env(configDir) {
     }
 }
 
-def dockerCleanup(imageName) {
+def dockerCleanup(imageName, dockerHubRepo) {
     sh """
         echo "=== Removing all local images after successful push ==="
         
