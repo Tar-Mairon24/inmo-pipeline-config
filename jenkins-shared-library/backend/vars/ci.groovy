@@ -197,12 +197,10 @@ def call(Map params) {
                 sh "docker images | grep ${imageName}"
 
                 env.DOCKER_IMAGE_TAG = gitCommit
-
-                utils.dockerCleanup(imageName)
             }
         }
 
-        store("Push to Registry") {
+        stage("Push to Registry") {
             def imageName = "inmo-backend"
             def gitCommit = env.DOCKER_IMAGE_TAG
             def dockerHubRepo = "tarmairon24/${imageName}"
@@ -233,6 +231,13 @@ def call(Map params) {
             echo "  - ${dockerHubRepo}:latest"
 
             sh 'docker logout'
+        }
+
+        stage('Docker Cleanup') {
+            script {
+                def imageName = "inmo-backend"
+                utils.dockerCleanup(imageName)
+            }
         }
 
         stage('Post declarative action') {
