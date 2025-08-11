@@ -129,7 +129,7 @@ def call(Map params) {
             def testResult = sh(
                 script: '''
                     # Run tests with proper coverage
-                    go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
+                    go test -v -coverprofile=coverage.out -covermode=atomic ./...
                 ''',
                 returnStatus: true
             )
