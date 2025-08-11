@@ -70,7 +70,7 @@ def toml2env(configDir) {
     }
 }
 
-def dockerCleanup(imageNamem, maxImages) {
+def dockerCleanup(imageName, maxImages) {
     sh """
         echo "Starting Docker cleanup for ${imageName}..."
         
