@@ -18,6 +18,19 @@ def call(Map params) {
                 
             sh  'curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b $(go env GOPATH)/bin v2.3.1'
         
+            sh '''
+                echo "Installing Docker Compose..."
+                if ! command -v docker-compose >/dev/null 2>&1; then
+                    echo "Docker Compose not found, installing..."
+                    COMPOSE_VERSION="1.29.2"
+                    curl -L "https://github.com/docker/compose/releases/download/${COMPOSE_VERSION}/docker-compose-$(uname -s)-$(uname -m)" -o $(go env GOPATH)/bin/docker-compose
+                    chmod +x $(go env GOPATH)/bin/docker-compose
+                    echo "Docker Compose installed to $(go env GOPATH)/bin/docker-compose"
+                else
+                    echo "Docker Compose already available"
+                fi
+            '''
+
             def goPath = sh(script: 'go env GOPATH', returnStdout: true).trim()
             env.PATH = "${goPath}/bin:${env.PATH}:${dockerHome}/bin"
             
