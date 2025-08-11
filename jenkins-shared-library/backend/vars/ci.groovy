@@ -202,6 +202,39 @@ def call(Map params) {
             }
         }
 
+        store("Push to Registry") {
+            def imageName = "inmo-backend"
+            def gitCommit = env.DOCKER_IMAGE_TAG
+            def dockerHubRepo = "tarmairon24/${imageName}"
+
+            withCredentials([usernamePassword(credentialsId: 'docker_hub', 
+                                            usernameVariable: 'DOCKERHUB_USERNAME', 
+                                            passwordVariable: 'DOCKERHUB_PASSWORD')]) {
+                sh '''
+                    echo "$DOCKERHUB_PASSWORD" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+                '''
+            }
+
+            def imageTag = "${dockerHubRepo}:${gitCommit}"
+            def latestTag = "${dockerHubRepo}:latest"
+            
+            echo "Tagging Docker images to Docker Hub:"
+            sh """
+                docker tag ${imageName}:${gitCommit} ${imageTag}
+                docker tag ${imageName}:latest ${latestTag}
+            """
+            echo "Pushing Docker images to Docker Hub:"
+            sh """
+                docker push ${imageTag}
+                docker push ${latestTag}
+            """
+            echo "Docker images pushed successfully:"
+            echo "  - ${dockerHubRepo}:${gitCommit}"
+            echo "  - ${dockerHubRepo}:latest"
+
+            sh 'docker logout'
+        }
+
         stage('Post declarative action') {
             echo "Cleaning up temporary files..."
             sh 'rm -f app.toml .env'
