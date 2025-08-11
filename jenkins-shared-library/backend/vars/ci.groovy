@@ -8,7 +8,7 @@ def call(Map params) {
             env.PATH = "${goHome}/bin:${dockerHome}/bin:${env.PATH}"
 
             sh '''
-                #rm $(go env GOPATH)/bin/golangci-lintrm $(go env GOPATH)/bin/golangci-lint
+                rm $(go env GOPATH)/bin/golangci-lint
                 curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b $(go env GOPATH)/bin v2.3.1
                 which golangci-lint || echo "golangci-lint installation failed"
                 golangci-lint --version || echo "golangci-lint version check failed"
