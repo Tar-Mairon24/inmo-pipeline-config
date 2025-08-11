@@ -3,27 +3,24 @@ import hudson.*;
 def call(Map params) {
     node('Agent') {
         stage('Set up tools') {
-            script {
-                def goHome = tool name: 'GoLatest', type: 'go'
-                def dockerHome = tool name: 'Default', type: 'dockerTool'
-                env.PATH = "${goHome}/bin:${dockerHome}/bin:${env.PATH}"
+            def goHome = tool name: 'GoLatest', type: 'go'
+            def dockerHome = tool name: 'Default', type: 'dockerTool'
+            env.PATH = "${goHome}/bin:${dockerHome}/bin:${env.PATH}"
 
-                if (!fileExists("${goHome}/bin/golangci-lint")) {
-                    sh '''
-                        rm $(go env GOPATH)/bin/golangci-lintrm $(go env GOPATH)/bin/golangci-lint
-                        curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b $(go env GOPATH)/bin v2.3.1
-                        which golangci-lint || echo "golangci-lint installation failed"
-                        golangci-lint --version || echo "golangci-lint version check failed
-                    '''
-                }
-            }
+            sh '''
+                rm $(go env GOPATH)/bin/golangci-lintrm $(go env GOPATH)/bin/golangci-lint
+                curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b $(go env GOPATH)/bin v2.3.1
+                which golangci-lint || echo "golangci-lint installation failed"
+                golangci-lint --version || echo "golangci-lint version check failed
+            '''
+        
             sh '''
                 echo "Go version: $(go version)"
                 echo "Docker version: $(docker --version)"
                 echo "PATH: $PATH"
                 echo "GOPATH: $(go env GOPATH)"
                 which golangci-lint || echo "golangci-lint not found in PATH"
-            '''
+                '''
         }
 
         stage('Parameters') {
