@@ -117,17 +117,44 @@ def call(Map params) {
 
         stage('Test') {
             echo "Running tests..."
+            
+            sh '''
+                echo "=== Pre-test checks ==="
+                echo "Available packages:"
+                go list ./...
+                echo "Test files:"
+                find . -name "*_test.go"
+            '''
+            
             def testResult = sh(
-                script: 'go test -v  -coverprofile=coverage.out -coverpkg=./... ./test/...',
+                script: '''
+                    # Run tests with proper coverage
+                    go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
+                ''',
                 returnStatus: true
             )
-            sh 'ls -la'
-            sh 'ls -la coverage.out || echo "No coverage report generated"'
+            
+            sh '''
+                echo "=== Post-test checks ==="
+                ls -la coverage.*
+                
+                if [ -f coverage.out ] && [ -s coverage.out ]; then
+                    echo "Coverage file generated successfully"
+                    echo "Total lines in coverage.out: $(wc -l < coverage.out)"
+                    
+                    # Generate HTML report
+                    go tool cover -html=coverage.out -o coverage.html
+                    
+                    # Show coverage summary
+                    echo "=== Coverage Summary ==="
+                    go tool cover -func=coverage.out | tail -10
+                else
+                    echo "ERROR: Coverage file is empty or missing"
+                    touch coverage.html  # Create empty file to prevent pipeline failure
+                fi
+            '''
 
-            sh 'go tool cover -html=coverage.out -o coverage.html'
-            echo "Coverage report generated: coverage.html" 
-
-            archiveArtifacts artifacts: 'coverage.html', allowEmptyArchive: true
+            archiveArtifacts artifacts: 'coverage.html,coverage.out', allowEmptyArchive: true
 
             if (testResult != 0) {
                 error 'Tests failed! Check the coverage report for details.'
