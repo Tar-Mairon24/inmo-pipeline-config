@@ -230,43 +230,70 @@ def call(Map params) {
         }
 
         stage("Push to Registry") {
-            def imageName = "inmo-backend"
-            def gitCommit = env.DOCKER_IMAGE_TAG
-            def dockerHubRepo = "tarmairon24/${imageName}"
+            script {
+                def imageName = "inmo-backend"
+                def gitCommit = env.DOCKER_IMAGE_TAG
+                def dockerHubRepo = "tarmairon24/${imageName}"
+                def pushSuccessful = false
 
-            withCredentials([usernamePassword(credentialsId: 'docker_hub', 
-                                            usernameVariable: 'DOCKERHUB_USERNAME', 
-                                            passwordVariable: 'DOCKERHUB_PASSWORD')]) {
-                sh '''
-                    echo "$DOCKERHUB_PASSWORD" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-                '''
+                try {
+                    withCredentials([usernamePassword(credentialsId: 'docker_hub', 
+                                                    usernameVariable: 'DOCKERHUB_USERNAME', 
+                                                    passwordVariable: 'DOCKERHUB_PASSWORD')]) {
+                        sh '''
+                            echo "Logging into Docker Hub..."
+                            echo "$DOCKERHUB_PASSWORD" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+                        '''
+                    }
+
+                    def imageTag = "${dockerHubRepo}:${gitCommit}"
+                    def latestTag = "${dockerHubRepo}:latest"
+                    
+                    echo "Tagging Docker images for Docker Hub:"
+                    sh """
+                        docker tag ${imageName}:${gitCommit} ${imageTag}
+                        docker tag ${imageName}:latest ${latestTag}
+                    """
+                    
+                    echo "Pushing Docker images to Docker Hub:"
+                    sh """
+                        docker push ${imageTag}
+                        docker push ${latestTag}
+                    """
+                    
+                    echo "Docker images pushed successfully:"
+                    echo "  - ${dockerHubRepo}:${gitCommit}"
+                    echo "  - ${dockerHubRepo}:latest"
+                    
+                    // Mark push as successful
+                    pushSuccessful = true
+                    env.PUSH_SUCCESSFUL = "true"
+                    
+                } catch (Exception e) {
+                    echo "Docker push failed: ${e.getMessage()}"
+                    echo "Keeping local images for debugging purposes"
+                    env.PUSH_SUCCESSFUL = "false"
+                    throw e // Re-throw to fail the stage
+                } finally {
+                    sh 'docker logout'
+                }
             }
-
-            def imageTag = "${dockerHubRepo}:${gitCommit}"
-            def latestTag = "${dockerHubRepo}:latest"
-            
-            echo "Tagging Docker images to Docker Hub:"
-            sh """
-                docker tag ${imageName}:${gitCommit} ${imageTag}
-                docker tag ${imageName}:latest ${latestTag}
-            """
-            echo "Pushing Docker images to Docker Hub:"
-            sh """
-                docker push ${imageTag}
-                docker push ${latestTag}
-            """
-            echo "Docker images pushed successfully:"
-            echo "  - ${dockerHubRepo}:${gitCommit}"
-            echo "  - ${dockerHubRepo}:latest"
-
-            sh 'docker logout'
         }
 
         stage('Docker Cleanup') {
             script {
-                def maxImages = 5
-                def imageName = "inmo-backend"
-                utils.dockerCleanup(imageName, maxImages)
+                if (env.PUSH_SUCCESSFUL == "true") {
+                    echo "Push successful - removing all local images to save space"
+                    def imageName = "inmo-backend"
+                    def dockerHubRepo = "tarmairon24/${imageName}"
+                        utils.dockerCleanup(imageName, dockerHubRepo)
+                } else {
+                    echo "Push failed - keeping local images for debugging"
+                    sh """
+                        echo "=== Current local images (kept for debugging) ==="
+                        docker images | grep -E "(inmo-backend|tarmairon24/inmo-backend)" || echo "No images found"
+                    """
+                }
             }
         }
 

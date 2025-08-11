@@ -70,35 +70,22 @@ def toml2env(configDir) {
     }
 }
 
-def dockerCleanup(imageName, maxImages) {
+def dockerCleanup(imageName) {
     sh """
-        echo "Starting Docker cleanup for ${imageName}..."
+        echo "=== Removing all local images after successful push ==="
         
-        REPOS="${imageName} tarmairon24/${imageName}"
+        echo "Removing local ${imageName} images..."
+        docker images ${imageName} --format "{{.Repository}}:{{.Tag}}" | xargs -r docker rmi -f || echo "Some ${imageName} images could not be removed"
         
-        for REPO in \$REPOS; do
-            IMAGE_COUNT=\$(docker images \$REPO --format "{{.Tag}}" | grep -v "latest" | wc -l)
-            echo "Current image count for \$REPO (excluding latest): \$IMAGE_COUNT"
-            
-            if [ "\$IMAGE_COUNT" -gt ${maxImages} ]; then
-                OLD_IMAGES=\$(docker images \$REPO --format "{{.ID}} {{.CreatedAt}} {{.Tag}}" | \\
-                            grep -v "latest" | \\
-                            sort -k2 -r | \\
-                            tail -n +\$((${maxImages} + 1)) | \\
-                            awk '{print \$1}') 
-                if [ -n "\$OLD_IMAGES" ]; then
-                    echo "Removing images from \$REPO: \$OLD_IMAGES"
-                    echo "\$OLD_IMAGES" | xargs docker rmi -f || echo "Some images could not be removed (might be in use)"
-                else
-                    echo "No old images to remove from \$REPO"
-                fi
-            else
-                echo "Only \$IMAGE_COUNT images found for \$REPO, no cleanup needed"
-            fi
-        done
-        docker images | grep -E "(inmo-backend|tarmairon24/inmo-backend)"
+        echo "Removing locally tagged Docker Hub images..."
+        docker images ${dockerHubRepo} --format "{{.Repository}}:{{.Tag}}" | xargs -r docker rmi -f || echo "Some ${dockerHubRepo} images could not be removed"
+        
+        echo "Removing dangling images..."
         docker image prune -f || echo "No dangling images to remove"
         
-        echo "Docker cleanup completed."
+        echo "=== Remaining images for ${imageName} ==="
+        docker images | grep -E "(${imageName}|${dockerHubRepo})" || echo "No local images remaining (as expected)"
+        
+        echo "Local cleanup completed - all images removed after successful push"
     """
 }
