@@ -9,18 +9,18 @@ def call(Map params) {
             // Set PATH first, before running any shell commands
             env.PATH = "${goHome}/bin:${dockerHome}/bin:${env.PATH}"
             
-            sh '''
+            sh """
                 echo "Setting up golangci-lint..."
                 echo "GOPATH: $(go env GOPATH)"
                 
                 # Remove existing golangci-lint if present
-                rm -f $(go env GOPATH)/bin/golangci-lint || echo "No existing golangci-lint to remove"
+                rm -f ${goHome}/bin/golangci-lint || echo "No existing golangci-lint to remove"
                 
                 curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b $(go env GOPATH)/bin v2.3.1
                 # Verify installation
                 which golangci-lint || echo "golangci-lint installation failed"
                 golangci-lint --version || echo "golangci-lint version check failed"
-                '''
+                """
                 
                 // Update PATH to include GOPATH/bin first (in case it's not already there)
                 def goPath = sh(script: 'go env GOPATH', returnStdout: true).trim()
