@@ -2,6 +2,7 @@ def call(Map m){
     switch(m.PipelineKind) {
         case "pr":
             if(env.CHANGE_TARGET == 'develop' || env.CHANGE_TARGET == 'main') {
+                sh 'Entering PR mode'
                 ci.call()
             }
             break
