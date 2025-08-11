@@ -5,22 +5,20 @@ def call(Map params) {
         stage('Set up tools') {
             def goHome = tool name: 'GoLatest', type: 'go'
             def dockerHome = tool name: 'Default', type: 'dockerTool'
-            env.PATH = "${goHome}/bin:${dockerHome}/bin:${env.PATH}"
-
+            
             sh '''
-                rm $(go env GOPATH)/bin/golangci-lint
-                curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b $(go env GOPATH)/bin v2.3.1
-                which golangci-lint || echo "golangci-lint installation failed"
-                golangci-lint --version || echo "golangci-lint version check failed"
+                export GOPATH=$(go env GOPATH)
+                rm -f $GOPATH/bin/golangci-lint || echo "No existing golangci-lint to remove"
+                curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $GOPATH/bin v1.59.1
             '''
-        
+            
+            env.PATH = "${sh(script: 'go env GOPATH', returnStdout: true).trim()}/bin:${goHome}/bin:${dockerHome}/bin:${env.PATH}"
+            
             sh '''
-                echo "Go version: $(go version)"
-                echo "Docker version: $(docker --version)"
                 echo "PATH: $PATH"
-                echo "GOPATH: $(go env GOPATH)"
-                which golangci-lint || echo "golangci-lint not found in PATH"
-                '''
+                which golangci-lint
+                golangci-lint --version
+            '''
         }
 
         stage('Parameters') {
