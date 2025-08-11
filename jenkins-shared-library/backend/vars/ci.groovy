@@ -10,7 +10,10 @@ def call(Map params) {
 
                 if (!fileExists("${goHome}/bin/golangci-lint")) {
                     sh """
-                        curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ${goHome}/bin v1.59.1
+                        rm $(go env GOPATH)/bin/golangci-lintrm $(go env GOPATH)/bin/golangci-lint
+                        curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b $(go env GOPATH)/bin v2.3.1
+                        which golangci-lint || echo "golangci-lint installation failed"
+                        golangci-lint --version || echo "golangci-lint version check failed
                     """
                 }
             }
