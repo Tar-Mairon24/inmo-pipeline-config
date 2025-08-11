@@ -13,9 +13,13 @@ RUN go build -o main cmd/main.go
 
 FROM alpine:latest
 
-WORKDIR /root/
+WORKDIR /app
 
 COPY --from=builder /app/main .
+
+RUN chown appuser:appuser main
+
+USER appuser
 
 EXPOSE 8080
 

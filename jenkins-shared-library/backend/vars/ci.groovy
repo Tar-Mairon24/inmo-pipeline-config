@@ -17,19 +17,6 @@ def call(Map params) {
             sh  "rm -f ${goHome}/bin/golangci-lint || echo 'No existing golangci-lint to remove'"
                 
             sh  'curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b $(go env GOPATH)/bin v2.3.1'
-        
-            sh '''
-                echo "Installing Docker Compose..."
-                if ! command -v docker-compose >/dev/null 2>&1; then
-                    echo "Docker Compose not found, installing..."
-                    COMPOSE_VERSION="1.29.2"
-                    curl -L "https://github.com/docker/compose/releases/download/${COMPOSE_VERSION}/docker-compose-$(uname -s)-$(uname -m)" -o $(go env GOPATH)/bin/docker-compose
-                    chmod +x $(go env GOPATH)/bin/docker-compose
-                    echo "Docker Compose installed to $(go env GOPATH)/bin/docker-compose"
-                else
-                    echo "Docker Compose already available"
-                fi
-            '''
 
             def goPath = sh(script: 'go env GOPATH', returnStdout: true).trim()
             env.PATH = "${goPath}/bin:${env.PATH}:${dockerHome}/bin"
@@ -207,6 +194,66 @@ def call(Map params) {
                 echo "Running linter..."
                 golangci-lint run ./...
             '''
+        }
+
+        stage('Dockerfile Setup') {
+            checkout([
+                $class: 'GitSCM',
+                branches: [[name: 'main']],
+                userRemoteConfigs: [[
+                    url: 'https://github.com/Tar-Mairon24/inmo-pipeline-config.git',
+                    credentialsId: 'Github_Token'
+                ]],
+                extensions: [
+                    [$class: 'RelativeTargetDirectory', relativeTargetDir: 'dockerfiles-repo']
+                ]
+            ])
+
+            sh '''
+                echo "Dockerfiles repository checked out."
+                ls -la
+                echo ""
+                echo "Dockerfiles-repo/:"
+                ls -la dockerfiles-repo/dockerfiles/archetypes/backend/
+                echo ""
+                echo "Copying Dockerfile to project root..."
+                cp dockerfiles-repo/dockerfiles/archetypes/backend/Dockerfile .
+                if [ ! -f Dockerfile ]; then
+                    echo "Error: Dockerfile not found after copy."
+                    exit 1
+                fi
+                echo "Dockerfile copied successfully."
+                ls -la Dockerfile
+                rm -rf dockerfiles-repo || echo "No dockerfiles-repo directory to remove"
+                rm -rf dockerfiles-repo@* || echo "No dockerfiles-repo@tmp directory to remove"
+                ls -la
+            '''
+        }
+
+        stage("Build Image") {
+             script {
+                def gitCommit = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
+                def imageName = "inmo-backend"
+                def imageTag = "${imageName}:${gitCommit}"
+                
+                sh """
+                    echo "Building Docker image with commit hash: ${gitCommit}"
+                    echo "Git commit: ${gitCommit}"
+                    echo "Build number: ${env.BUILD_NUMBER}"
+                    
+                    # Build with both commit tag AND latest tag
+                    docker build -t ${imageTag} -t ${imageName}:latest .
+                    
+                    echo "Docker image built successfully with tags:"
+                    echo "  - ${imageTag} (archived version)"
+                    echo "  - ${imageName}:latest (current version)"
+                    
+                    docker images | grep ${imageName}
+                """
+                env.DOCKER_IMAGE_TAG = gitCommit
+
+                utils.dockerCleanup(imageName)
+            }
         }
 
         stage('Post declarative action') {
