@@ -9,10 +9,8 @@ def call(Map params) {
             // Set PATH first, before running any shell commands
             env.PATH = "${goHome}/bin:${dockerHome}/bin:${env.PATH}"
             
-            sh '''
-                echo "Setting up golangci-lint..."
-                echo "GOPATH: $(go env GOPATH)"
-            '''
+            echo "Setting up golangci-lint..."
+            echo "GOPATH: $(go env GOPATH)"
             
             sh  "rm -f ${goHome}/bin/golangci-lint || echo 'No existing golangci-lint to remove'"
                 
@@ -21,15 +19,13 @@ def call(Map params) {
             def goPath = sh(script: 'go env GOPATH', returnStdout: true).trim()
             env.PATH = "${goPath}/bin:${env.PATH}:${dockerHome}/bin"
             
-            sh '''
-                echo "Tool verification:"
-                echo "Go version: $(go version)"
-                echo "Docker version: $(docker --version)"
-                echo "Docker Compose version: $(docker compose version || docker-compose --version)"
-                echo "golangci-lint version: $(golangci-lint --version)"
-                echo "PATH: $PATH"
-                echo "GOPATH: $(go env GOPATH)"
-            '''
+            echo "Tool verification:"
+            echo "Go version: $(go version)"
+            echo "Docker version: $(docker --version)"
+            echo "Docker Compose version: $(docker compose version || docker-compose --version)"
+            echo "golangci-lint version: $(golangci-lint --version)"
+            echo "PATH: $PATH"
+            echo "GOPATH: $(go env GOPATH)"
         }
 
         stage('Parameters') {
