@@ -264,8 +264,9 @@ def call(Map params) {
 
         stage('Docker Cleanup') {
             script {
+                def maxImages = 5
                 def imageName = "inmo-backend"
-                utils.dockerCleanup(imageName)
+                utils.dockerCleanup(imageName, maxImages)
             }
         }
 
