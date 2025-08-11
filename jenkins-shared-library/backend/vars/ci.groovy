@@ -13,28 +13,22 @@ def call(Map params) {
                 echo "Setting up golangci-lint..."
                 echo "GOPATH: $(go env GOPATH)"
             '''
-                
             
             sh  "rm -f ${goHome}/bin/golangci-lint || echo 'No existing golangci-lint to remove'"
                 
+            sh  'curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b $(go env GOPATH)/bin v2.3.1'
+        
+            def goPath = sh(script: 'go env GOPATH', returnStdout: true).trim()
+            env.PATH = "${goPath}/bin:${env.PATH}:${dockerHome}/bin"
+            
             sh '''
-                curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/HEAD/install.sh | sh -s -- -b $(go env GOPATH)/bin v2.3.1
-                # Verify installation
-                which golangci-lint || echo "golangci-lint installation failed"
-                golangci-lint --version || echo "golangci-lint version check failed"
-            '''
-                
-                // Update PATH to include GOPATH/bin first (in case it's not already there)
-                def goPath = sh(script: 'go env GOPATH', returnStdout: true).trim()
-                env.PATH = "${goPath}/bin:${env.PATH}"
-                
-                sh '''
-                    echo "Tool verification:"
-                    echo "Go version: $(go version)"
-                    echo "Docker version: $(docker --version)"
-                    echo "golangci-lint version: $(golangci-lint --version)"
-                    echo "PATH: $PATH"
-                    echo "GOPATH: $(go env GOPATH)"
+                echo "Tool verification:"
+                echo "Go version: $(go version)"
+                echo "Docker version: $(docker --version)"
+                echo "Docker Compose version: $(docker compose version || docker-compose --version)"
+                echo "golangci-lint version: $(golangci-lint --version)"
+                echo "PATH: $PATH"
+                echo "GOPATH: $(go env GOPATH)"
             '''
         }
 
