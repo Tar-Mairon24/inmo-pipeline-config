@@ -128,8 +128,10 @@ def call(Map params) {
             
             def testResult = sh(
                 script: '''
-                    # Run tests with proper coverage
-                    go test -v -coverprofile=coverage.out -covermode=atomic ./...
+                    # Run tests with explicit coverage packages
+                    go test -v -coverprofile=coverage.out -covermode=atomic \
+                        -coverpkg=./internal/...,./cmd/...,./middleware/... \
+                        ./test/...
                 ''',
                 returnStatus: true
             )
