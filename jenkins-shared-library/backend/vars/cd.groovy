@@ -8,15 +8,16 @@ def call(Map params) {
         }
 
         stage('Set up tools') {
+            def goHome = tool name: 'GoLatest', type: 'go'
             def dockerHome = tool name: 'Default', type: 'dockerTool'
             
-            env.PATH = "${dockerHome}/bin:${env.PATH}"
+            env.PATH = "${goHome}/bin:${dockerHome}/bin:${env.PATH}"
             
             sh '''
                 echo "=== Installing Docker Compose ==="
                 if ! command -v docker-compose >/dev/null 2>&1; then
                     echo "Docker Compose not found, installing..."
-                    COMPOSE_VERSION="2.39.0"
+                    COMPOSE_VERSION="2.21.0"
                     
                     # Create a local bin directory if it doesn't exist
                     mkdir -p $HOME/bin
