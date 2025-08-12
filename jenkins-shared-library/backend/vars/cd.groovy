@@ -14,21 +14,13 @@ def call(Map params) {
             env.PATH = "${goHome}/bin:${dockerHome}/bin:${env.PATH}"
             
             sh '''
-                echo "=== Installing Docker Compose ==="
+                echo "Installing Docker Compose..."
                 if ! command -v docker-compose >/dev/null 2>&1; then
                     echo "Docker Compose not found, installing..."
-                    COMPOSE_VERSION="2.21.0"
-                    
-                    # Create a local bin directory if it doesn't exist
-                    mkdir -p $HOME/bin
-                    
-                    # Download Docker Compose
-                    curl -L "https://github.com/docker/compose/releases/download/${COMPOSE_VERSION}/docker-compose-$(uname -s)-$(uname -m)" -o $HOME/bin/docker-compose
-                    
-                    # Make it executable
-                    chmod +x $HOME/bin/docker-compose
-                    
-                    echo "Docker Compose installed to $HOME/bin/docker-compose"
+                    COMPOSE_VERSION="1.29.2"
+                    curl -L "https://github.com/docker/compose/releases/download/${COMPOSE_VERSION}/docker-compose-$(uname -s)-$(uname -m)" -o $(go env GOPATH)/bin/docker-compose
+                    chmod +x $(go env GOPATH)/bin/docker-compose
+                    echo "Docker Compose installed to $(go env GOPATH)/bin/docker-compose"
                 else
                     echo "Docker Compose already available"
                 fi
