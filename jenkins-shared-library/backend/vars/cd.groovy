@@ -2,6 +2,17 @@ import hudson.*;
 
 def call(Map params) {
     node('Agent') {
+        stage('Checkout SCM') {
+            checkout scm
+
+            echo "Checked out branch: ${env.BRANCH_NAME}"
+            sh '''
+                echo "Current branch: $(git rev-parse --abbrev-ref HEAD)"
+                echo "Last commit: $(git log -1 --pretty=format:'%h - %s')"
+                ls -la
+            '''
+        }
+
         stage('Set up tools') {
             def goHome = tool name: 'GoLatest', type: 'go'
             def dockerHome = tool name: 'Default', type: 'dockerTool'
