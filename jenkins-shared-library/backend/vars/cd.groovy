@@ -46,17 +46,6 @@ def call(Map params) {
             '''
         }
 
-        stage('Checkout SCM') {
-            checkout scm
-
-            echo "Checked out branch: ${BRANCH_NAME}"
-            sh '''
-                echo "Current branch: $(git rev-parse --abbrev-ref HEAD)"
-                echo "Last commit: $(git log -1 --pretty=format:'%h - %s')"
-                ls -la
-            '''
-        }
-
         stage('Load configuration') {
             checkout([
                 $class: 'GitSCM',
