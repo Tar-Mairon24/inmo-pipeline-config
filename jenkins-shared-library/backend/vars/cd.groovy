@@ -10,15 +10,13 @@ def call(Map params) {
         stage('Set up tools') {
             def goHome = tool name: 'GoLatest', type: 'go'
             def dockerHome = tool name: 'Default', type: 'dockerTool'
-            
             env.PATH = "${goHome}/bin:${dockerHome}/bin:${env.PATH}"
-            
+            def compose_version = 1.29.2
             sh """
                 echo "Installing Docker Compose..."
                 if ! command -v docker-compose >/dev/null 2>&1; then
                     echo "Docker Compose not found, installing..."
-                    COMPOSE_VERSION="1.29.2"
-                    curl -L "https://github.com/docker/compose/releases/download/${COMPOSE_VERSION}/docker-compose-$(uname -s)-$(uname -m)" -o ${dockerHome}/bin/docker-compose
+                    curl -L "https://github.com/docker/compose/releases/download/${compose_version}/docker-compose-$(uname -s)-$(uname -m)" -o ${dockerHome}/bin/docker-compose
                     chmod +x $(go env GOPATH)/bin/docker-compose
                     echo "Docker Compose installed to ${dockerHome}/bin/docker-compose"
                 else
