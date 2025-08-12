@@ -3,8 +3,8 @@ import hudson.*;
 def call(Map params) {
     node('Agent') {
         evironment {
-            ENVIRONMENT = env.ENVIRONMENT ?: 'develop'
-            BRANCH_NAME = env.BRANCH_NAME ?: 'develop'
+            def ENVIRONMENT = env.ENVIRONMENT ?: 'develop'
+            def BRANCH_NAME = env.BRANCH_NAME ?: 'develop'
         }
 
         stage('Set up tools') {
