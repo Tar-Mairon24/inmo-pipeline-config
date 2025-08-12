@@ -2,6 +2,11 @@ import hudson.*;
 
 def call(Map params) {
     node('Agent') {
+        evironment {
+            ENVIRONMENT = env.ENVIRONMENT ?: 'develop'
+            BRANCH_NAME = env.BRANCH_NAME ?: 'develop'
+        }
+
         stage('Set up tools') {
             def dockerHome = tool name: 'Default', type: 'dockerTool'
             
@@ -41,33 +46,45 @@ def call(Map params) {
             '''
         }
 
-        stage('Parameters') {
-            sh 'whoami'
+        stage('Checkout SCM') {
+            checkout scm
 
-            def pipelineKind = utils.getPipelineKind()
+            echo "Checked out branch: ${RANCH_NAME}"
+            sh '''
+                echo "Current branch: $(git rev-parse --abbrev-ref HEAD)"
+                echo "Last commit: $(git log -1 --pretty=format:'%h - %s')"
+                ls -la
+            '''
+        }
 
-            } if (pipelineKind == 'branch') {
-                case env.BRANCH_NAME {
-                    case 'develop':
-                        env.BRANCH_NAME_TARGET = 'develop'
-                        env.BRANCH_NAME_ORIGIN = 'main'
-                        break
-                    case 'main':
-                        env.BRANCH_NAME_TARGET = 'production'
-                        env.BRANCH_NAME_ORIGIN = 'develop'
-                        break
-                    default:
-                        error "Unsupported branch: ${env.BRANCH_NAME}"
+        stage('Load configuration') {
+            checkout([
+                $class: 'GitSCM',
+                branches: [[name: 'main']],
+                userRemoteConfigs: [[
+                    url: 'https://github.com/Tar-Mairon24/inmo-pipeline-properties.git',
+                    credentialsId: 'Github_Token'
+                ]],
+                extensions: [
+                    [$class: 'RelativeTargetDirectory', relativeTargetDir: 'config-repo']
+                ]
+            ])
+
+                echo "Configuration repository checked out."
+                sh 'ls -la'
+                echo "Configuration files from config-repo/:"
+                sh 'ls -la config-repo/'
+        }
+
+        stage('Parsing configuration') {
+            script {
+                def configDir = "config-repo/backend/${ENVIRONMENT}"
+                def success = utils.toml2env(configDir)
+                if (!success) {
+                    error "Failed to parse configuration from ${configDir}"
                 }
-            } else {
-                error "Unsupported PipelineKind: ${pipelineKind}"
+                sh 'ls -la'
             }
-
-            env.ENVIRONMENT_NAME = utils.getEnviromentName(env.BRANCH_NAME_TARGET)
-
-            echo "BRANCH_NAME_TARGET: $BRANCH_NAME_TARGET"
-            echo "BRANCH_NAME_ORIGIN: $BRANCH_NAME_ORIGIN"
-            echo "ENVIRONMENT_NAME: $ENVIRONMENT_NAME"
         }
     }
 }

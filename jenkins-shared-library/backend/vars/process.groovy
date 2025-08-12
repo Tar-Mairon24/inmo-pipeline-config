@@ -8,7 +8,7 @@ def call(Map m){
             break
         case "branch":
             if(env.BRANCH_NAME == 'develop' || env.BRANCH_NAME == 'main') {
-                cd.call()
+                ci.call()
             }
             break
         default:

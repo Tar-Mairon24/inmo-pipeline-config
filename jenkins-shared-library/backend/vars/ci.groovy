@@ -192,6 +192,7 @@ def call(Map params) {
             echo "Copying Dockerfile to project root..."
             sh '''
                 cp dockerfiles-repo/dockerfiles/archetypes/backend/Dockerfile .
+                cp .dockerignore .
                 if [ ! -f Dockerfile ]; then
                     echo "Error: Dockerfile not found after copy."
                     exit 1
