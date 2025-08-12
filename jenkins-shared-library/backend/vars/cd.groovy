@@ -2,26 +2,26 @@ import hudson.*;
 
 def call(Map params) {
     node('Agent') {
-        environment {
-            env.ENVIRONMENT = env.ENVIRONMENT ?: 'develop'
-            env.BRANCH_NAME = env.BRANCH_NAME ?: 'develop'
-        }
-
         stage('Set up tools') {
             def goHome = tool name: 'GoLatest', type: 'go'
             def dockerHome = tool name: 'Default', type: 'dockerTool'
             env.PATH = "${goHome}/bin:${dockerHome}/bin:${env.PATH}"
-            sh """
-                echo "Installing Docker Compose..."
-                if ! command -v docker-compose >/dev/null 2>&1; then
-                    echo "Docker Compose not found, installing..."
-                    curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o ${dockerHome}/bin/docker-compose
-                    chmod +x $(go env GOPATH)/bin/docker-compose
-                    echo "Docker Compose installed to ${dockerHome}/bin/docker-compose"
-                else
-                    echo "Docker Compose already available"
-                fi
-            """
+            
+            script {
+                def dockerBinPath = "${dockerHome}/bin"
+                
+                sh """
+                    echo "Installing Docker Compose..."
+                    if ! command -v docker-compose >/dev/null 2>&1; then
+                        echo "Docker Compose not found, installing..."
+                        curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-\$(uname -s)-\$(uname -m)" -o ${dockerBinPath}/docker-compose
+                        chmod +x ${dockerBinPath}/docker-compose
+                        echo "Docker Compose installed to ${dockerBinPath}/docker-compose"
+                    else
+                        echo "Docker Compose already available"
+                    fi
+                """
+            }
             
             env.PATH = "${env.PATH}:${dockerHome}/bin"
             
