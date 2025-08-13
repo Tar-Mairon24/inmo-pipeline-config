@@ -92,13 +92,13 @@ def call(Map params) {
                             exit 1
                         fi
                         if grep -q "dev_db_host" .env; then
-                            sed -i "s/dev_host/${DEV_DB_HOST}/g" .env
+                            sed -i "s/dev_db_host/${DEV_DB_HOST}/g" .env
                         else
                             echo "Warning: dev_db_host placeholder not found"
                         fi
                         
                         if grep -q "dev_db_pasword" .env; then
-                            sed -i "s/dev_pasword/${DEV_DB_PASSWORD}/g" .env
+                            sed -i "s/dev_db_pasword/${DEV_DB_PASSWORD}/g" .env
                         else
                             echo "Warning: dev_db_pasword placeholder not found"
                         fi
