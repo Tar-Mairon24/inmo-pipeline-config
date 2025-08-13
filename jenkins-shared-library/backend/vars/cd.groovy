@@ -68,7 +68,7 @@ def call(Map params) {
 
         stage('Parsing configuration') {
             script {
-                def configDir = "config-repo/backend/${env.BRANCH_NAME}"
+                def configDir = "properties-repo/backend/${env.BRANCH_NAME}"
                 def success = utils.toml2env(configDir)
                 if (!success) {
                     error "Failed to parse configuration from ${configDir}"
