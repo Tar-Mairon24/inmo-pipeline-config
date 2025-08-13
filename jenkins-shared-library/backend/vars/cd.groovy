@@ -76,5 +76,39 @@ def call(Map params) {
                 sh 'ls -la'
             }
         }
+
+        stage('Replace Secrets') {
+            script {
+                echo "Replacing credential placeholders with actual values..."
+                
+                withCredentials([
+                    string(credentialsId: 'dev_host', variable: 'ACTUAL_DB_HOST'),
+                    string(credentialsId: 'dev_pasword', variable: 'ACTUAL_DB_PASSWORD')
+                ]) {
+                    sh '''
+                        cat .env
+                        if [ ! -f .env ]; then
+                            echo "ERROR: .env not found!"
+                            exit 1
+                        fi
+                        if grep -q "dev_host" .env; then
+                            echo "Replacing dev_host with actual database host"
+                            sed -i "s/dev_host/${ACTUAL_DB_HOST}/g" .env
+                        else
+                            echo "Warning: dev_host placeholder not found"
+                        fi
+                        
+                        if grep -q "dev_pasword" .env; then
+                            echo "Replacing dev_pasword with actual database password"
+                            sed -i "s/dev_pasword/${ACTUAL_DB_PASSWORD}/g" .env
+                        else
+                            echo "Warning: dev_pasword placeholder not found"
+                        fi
+
+                        cat .env
+                    '''
+                }
+            }
+        }
     }
 }
