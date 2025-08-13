@@ -22,6 +22,8 @@ def call(Map params) {
                 def dockerBinPath = "${dockerHome}/bin"
                 
                 sh """
+                    apt-get update && apt-get install -y wget curl || echo "Could not install wget/curl via apt"
+
                     echo "Installing Docker Compose..."
                     if ! command -v docker-compose >/dev/null 2>&1; then
                         echo "Docker Compose not found, installing..."
@@ -135,7 +137,7 @@ def call(Map params) {
                 
                 sh '''
                     ls -la config-repo/composeYamls/archetypes/backend/compose.yml || echo "No compose.yml found in config-repo/composeYamls/archetypes/backend/"
-                    docker-compose -f config-repo/composeYamls/archetypes/backend/compose.yml up -d
+                    docker-compose up -d
                     echo "Docker Compose started successfully."
                 '''
             }
