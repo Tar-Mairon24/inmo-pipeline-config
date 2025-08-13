@@ -82,8 +82,8 @@ def call(Map params) {
                 echo "Replacing credential placeholders with actual values..."
                 
                 withCredentials([
-                    string(credentialsId: 'dev_db_host', variable: 'dev_db_host'),
-                    string(credentialsId: 'dev_db_pasword', variable: 'dev_db_password')
+                    string(credentialsId: 'backend/dev_db_host', variable: 'dev_db_host'),
+                    string(credentialsId: 'backend/dev_db_pasword', variable: 'dev_db_password')
                 ]) {
                     sh '''
                         cat .env
