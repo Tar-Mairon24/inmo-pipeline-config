@@ -137,7 +137,7 @@ def call(Map params) {
                 
                 sh '''
                     ls -la config-repo/composeYamls/archetypes/backend/compose.yml || echo "No compose.yml found in config-repo/composeYamls/archetypes/backend/"
-                    docker compose down || echo "No existing Docker Compose to down"
+                    docker-compose down || echo "No existing Docker Compose to down"
                     docker-compose up -d
                     echo "Docker Compose started successfully."
                 '''
