@@ -125,13 +125,13 @@ def call(Map params) {
             sh 'ls -la config-repo'
             sh 'ls -la config-repo/composeYamls/archetypes/'
             sh 'ls -la config-repo/composeYamls/archetypes/backend/'
-
+            sh 'cp config-repo/composeYamls/archetypes/backend/compose.yml . || echo "No compose.yml found in config-repo/composeYamls/archetypes/backend/"'
+            sh 'ls -la'
         }
 
         stage('Deploy develop') {
             script {
-                echo "Running Docker Compose with the following environment variables:"
-                sh 'cat .env'
+                echo "Running Docker Compose"
                 
                 sh '''
                     ls -la config-repo/composeYamls/archetypes/backend/compose.yml || echo "No compose.yml found in config-repo/composeYamls/archetypes/backend/"
