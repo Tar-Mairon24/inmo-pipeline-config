@@ -121,11 +121,13 @@ def call(Map params) {
             ])
 
             echo "Docker Compose repository checked out."
+            sh 'ls -la config-repo'
             sh 'ls -la config-repo/compose/archetypes/'
-            sh 'ls -la composeYamls/archetypes/'
+            sh 'ls -la config-repo/compose/archetypes/backend/'
+
         }
 
-        stage('Run Docker Compose') {
+        stage('Deploy develop') {
             script {
                 echo "Running Docker Compose with the following environment variables:"
                 sh 'cat .env'
