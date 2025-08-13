@@ -134,8 +134,8 @@ def call(Map params) {
                 sh 'cat .env'
                 
                 sh '''
-                    ls -la config-repo-composeYamls/archetypes/backend/compose.yml || echo "No compose.yml found in config-repo-composeYamls/archetypes/backend/"
-                    docker-compose -f config-repo-composeYamls/archetypes/backend/compose.yml up -d
+                    ls -la config-repo/composeYamls/archetypes/backend/compose.yml || echo "No compose.yml found in config-repo/composeYamls/archetypes/backend/"
+                    docker-compose -f config-repo/composeYamls/archetypes/backend/compose.yml up -d
                     echo "Docker Compose started successfully."
                 '''
             }
@@ -144,10 +144,12 @@ def call(Map params) {
         stage('Health Check') {
             script {
                 echo "Running health check..."
+                
                 def healthCheckUrl = "http://localhost:3000/api/v1/health"
                 
                 sh """
-                    if ! wget --no-verbose --tries=1 --spider "${healthCheckUrl}"; then
+                    sleep 10
+                    if ! wget --no-verbose --tries=5 --spider "${healthCheckUrl}"; then
                         echo "Health check failed for ${healthCheckUrl}"
                         error "Service is not healthy"
                     else
