@@ -123,8 +123,8 @@ def call(Map params) {
 
             echo "Docker Compose repository checked out."
             sh 'ls -la config-repo'
-            sh 'ls -la config-repo/compose/archetypes/'
-            sh 'ls -la config-repo/compose/archetypes/backend/'
+            sh 'ls -la config-repo/composeYamls/archetypes/'
+            sh 'ls -la config-repo/composeYamls/archetypes/backend/'
 
         }
 

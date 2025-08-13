@@ -54,7 +54,6 @@ def toml2env(propertiesRepo, configDir) {
         echo "Environment variables loaded from .env file."
         echo "Conversion complete"
         echo "Environment variables loaded (\$(wc -l < .env) variables):"
-        head -10 .env
         cat .env
 
         echo "Removing ${propertiesRepo} to avoid Go modules issues..."
