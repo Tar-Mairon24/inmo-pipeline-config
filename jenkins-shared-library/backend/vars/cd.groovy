@@ -82,23 +82,23 @@ def call(Map params) {
                 echo "Replacing credential placeholders with actual values..."
                 
                 withCredentials([
-                    string(credentialsId: 'Backend/Backend/dev_db_host', variable: 'dev_db_host'),
-                    string(credentialsId: 'Backend/Backend/dev_db_pasword', variable: 'dev_db_password')
-                ]) {
+                    string(credentialsId: 'dev_db_host', variable: 'DEV_DB_HOST'),
+                    string(credentialsId: 'dev_db_password', variable: 'DEV_DB_PASSWORD')    
+                ]){
                     sh '''
                         cat .env
                         if [ ! -f .env ]; then
                             echo "ERROR: .env not found!"
                             exit 1
                         fi
-                        if grep -q "dev_host" .env; then
-                            sed -i "s/dev_host/${dev_db_host}/g" .env
+                        if grep -q "dev_db_host" .env; then
+                            sed -i "s/dev_host/${DEV_DB_HOST}/g" .env
                         else
                             echo "Warning: dev_db_host placeholder not found"
                         fi
                         
-                        if grep -q "dev_pasword" .env; then
-                            sed -i "s/dev_pasword/${dev_db_password}/g" .env
+                        if grep -q "dev_db_pasword" .env; then
+                            sed -i "s/dev_pasword/${DEV_DB_PASSWORD}/g" .env
                         else
                             echo "Warning: dev_db_pasword placeholder not found"
                         fi
@@ -106,6 +106,7 @@ def call(Map params) {
                         cat .env
                     '''
                 }
+                
             }
         }
     }
