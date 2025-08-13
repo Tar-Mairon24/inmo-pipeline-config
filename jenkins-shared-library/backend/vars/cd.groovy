@@ -56,14 +56,14 @@ def call(Map params) {
                     credentialsId: 'Github_Token'
                 ]],
                 extensions: [
-                    [$class: 'RelativeTargetDirectory', relativeTargetDir: 'config-repo']
+                    [$class: 'RelativeTargetDirectory', relativeTargetDir: 'properties-repo']
                 ]
             ])
 
                 echo "Configuration repository checked out."
                 sh 'ls -la'
-                echo "Configuration files from config-repo/:"
-                sh 'ls -la config-repo/'
+                echo "Configuration files from properties-repo/:"
+                sh 'ls -la properties-repo/'
         }
 
         stage('Parsing configuration') {
@@ -107,13 +107,32 @@ def call(Map params) {
             }
         }
 
+        stage('Prepare Docker Compose') {
+            checkout([
+                $class: 'GitSCM',
+                branches: [[name: 'main']],
+                userRemoteConfigs: [[
+                    url: 'https://github.com/Tar-Mairon24/inmo-pipeline-config.git',
+                    credentialsId: 'Github_Token'
+                ]],
+                extensions: [
+                    [$class: 'RelativeTargetDirectory', relativeTargetDir: 'config-repo']
+                ]
+            ])
+
+            echo "Docker Compose repository checked out."
+            sh 'ls -la config-repo/compose/archetypes/'
+            sh 'ls -la composeYamls/archetypes/'
+        }
+
         stage('Run Docker Compose') {
             script {
                 echo "Running Docker Compose with the following environment variables:"
                 sh 'cat .env'
                 
                 sh '''
-                    docker-compose -f compose/archetypes/compose.yml up -d
+                    ls -la config-repo-composeYamls/archetypes/backend/compose.yml || echo "No compose.yml found in config-repo-composeYamls/archetypes/backend/"
+                    docker-compose -f config-repo-composeYamls/archetypes/backend/compose.yml up -d
                     echo "Docker Compose started successfully."
                 '''
             }
@@ -140,7 +159,8 @@ def call(Map params) {
                 echo "Performing post actions..."
                 
                 sh 'rm .env || echo "No .env file to remove"'
-                
+                sh 'rm -rf config-repo* || echo "No config-repo directory to remove"'
+                sh 'rm -rf properties-repo* || echo "No properties-repo directory to remove"'
                 
                 echo "Post actions completed successfully."
             }
