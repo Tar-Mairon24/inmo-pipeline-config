@@ -86,7 +86,6 @@ def call(Map params) {
                     string(credentialsId: 'dev_db_password', variable: 'DEV_DB_PASSWORD')    
                 ]){
                     sh '''
-                        cat .env
                         if [ ! -f .env ]; then
                             echo "ERROR: .env not found!"
                             exit 1
@@ -102,11 +101,48 @@ def call(Map params) {
                         else
                             echo "Warning: dev_db_pasword placeholder not found"
                         fi
-
-                        cat .env
                     '''
                 }
                 
+            }
+        }
+
+        stage('Run Docker Compose') {
+            script {
+                echo "Running Docker Compose with the following environment variables:"
+                sh 'cat .env'
+                
+                sh '''
+                    docker-compose -f compose/archetypes/compose.yml up -d
+                    echo "Docker Compose started successfully."
+                '''
+            }
+        }
+
+        stage('Health Check') {
+            script {
+                echo "Running health check..."
+                def healthCheckUrl = "http://localhost:3000/api/v1/health"
+                
+                sh """
+                    if ! wget --no-verbose --tries=1 --spider "${healthCheckUrl}"; then
+                        echo "Health check failed for ${healthCheckUrl}"
+                        error "Service is not healthy"
+                    else
+                        echo "Health check passed for ${healthCheckUrl}"
+                    fi
+                """
+            }
+        }
+
+        stage('Post actions') {
+            script {
+                echo "Performing post actions..."
+                
+                sh 'rm .env || echo "No .env file to remove"'
+                
+                
+                echo "Post actions completed successfully."
             }
         }
     }

@@ -5,12 +5,12 @@ services:
     ports:
       - "3000:3000"
     environment:
-      DB_HOST: ${DB_HOST}
-      DB_PORT: ${DB_PORT}
-      DB_USER: ${DB_USER}
-      DB_PASSWORD: ${DB_PASSWORD}
-      DB_NAME: ${DB_NAME}
-      SERVER_PORT: ${SERVER_PORT}
+      DB_HOST: ${DATABASE_HOST}
+      DB_PORT: ${DATABASE_PORT}
+      DB_USER: ${DATABASE_USER}
+      DB_PASSWORD: ${DATABASE_PASSWORD}
+      DB_NAME: ${DATABASE_NAME}
+      SERVER_PORT: ${API_SERVER_PORT}
     networks:
       - inmo-app
     restart: unless-stopped
