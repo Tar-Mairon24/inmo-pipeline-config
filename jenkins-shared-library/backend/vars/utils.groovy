@@ -15,7 +15,7 @@ def getEnviromentName(branchName) {
     }
 }
 
-def toml2env(configDir) {
+def toml2env(propertiesRepo, configDir) {
     def configFile = "${configDir}/app.toml"
 
     try {
@@ -24,7 +24,7 @@ def toml2env(configDir) {
         if [ ! -f "${configFile}" ]; then
             echo "Configuration file not found: ${configFile}"
             echo "Available backend configurations:"
-            find config-repo/backend/ -name "*.toml" || echo "No TOML files found"
+            find ${configFile} -name "*.toml" || echo "No TOML files found"
             exit 1
         fi
         echo "Found configuration file"
@@ -32,17 +32,17 @@ def toml2env(configDir) {
         head -20 "${configFile}"
 
         echo "Converting TOML to .env format..."
-        cp "${configFile}" config-repo/tools/app.toml
-        if [ ! -f "config-repo/tools/toml2env.go" ]; then
-            echo "Converter not found: config-repo/tools/toml2env.go"
+        cp "${configFile}" ${propertiesRepo}/tools/app.toml
+        if [ ! -f "${propertiesRepo}/tools/toml2env.go" ]; then
+            echo "Converter not found: ${propertiesRepo}/tools/toml2env.go"
             echo "Available files in tools directory:"
-            ls -la config-repo/tools/ || echo "Tools directory not found"
+            ls -la ${propertiesRepo}/tools/ || echo "Tools directory not found"
             exit 1
         fi
         ls -la
-        ls -la config-repo/tools 
+        ls -la ${propertiesRepo}/tools 
         echo "Running conversion..."
-        cd config-repo/tools/
+        cd ${propertiesRepo}/tools/
         go run toml2env.go app.toml ../../.env
         echo "Conversion complete. Generated .env file:"
         cd ../../
@@ -57,9 +57,9 @@ def toml2env(configDir) {
         head -10 .env
         cat .env
 
-        echo "Removing config-repo to avoid Go modules issues..."
-        rm -rf config-repo || echo "No config-repo directory to remove"
-        rm -rf config-repo@* || echo "No config-repo@temp directory to remove"
+        echo "Removing ${propertiesRepo} to avoid Go modules issues..."
+        rm -rf ${propertiesRepo} || echo "No ${propertiesRepo} directory to remove"
+        rm -rf ${propertiesRepo}@* || echo "No ${propertiesRepo}@temp directory to remove"
         ls -la
     """
         return true
