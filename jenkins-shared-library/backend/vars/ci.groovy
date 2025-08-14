@@ -75,20 +75,21 @@ def call(Map params) {
                     credentialsId: 'Github_Token'
                 ]],
                 extensions: [
-                    [$class: 'RelativeTargetDirectory', relativeTargetDir: 'config-repo']
+                    [$class: 'RelativeTargetDirectory', relativeTargetDir: 'properties-repo']
                 ]
             ])
 
                 echo "Configuration repository checked out."
                 sh 'ls -la'
-                echo "Configuration files from config-repo/:"
-                sh 'ls -la config-repo/'
+                echo "Configuration files from properties-repo/:"
+                sh 'ls -la properties-repo/'
         }
 
         stage('Parsing configuration') {
             script {
-                def configDir = "config-repo/backend/${env.ENVIRONMENT_NAME}"
-                def success = utils.toml2env(configDir)
+                def propertiesRepo = 'properties-repo'
+                def configDir = "properties-repo/backend/${env.BRANCH_NAME}"
+                def success = utils.toml2env(propertiesRepo, configDir)
                 if (!success) {
                     error "Failed to parse configuration from ${configDir}"
                 }
@@ -179,7 +180,7 @@ def call(Map params) {
                     credentialsId: 'Github_Token'
                 ]],
                 extensions: [
-                    [$class: 'RelativeTargetDirectory', relativeTargetDir: 'dockerfiles-repo']
+                    [$class: 'RelativeTargetDirectory', relativeTargetDir: 'config-repo']
                 ]
             ])
 
@@ -187,12 +188,12 @@ def call(Map params) {
             sh '''
                 ls -la
                 echo ""
-                echo "Dockerfiles-repo/:"
-                ls -la dockerfiles-repo/dockerfiles/archetypes/backend/
+                echo 'config-repo/:"
+                ls -la'config-repo/dockerfiles/archetypes/backend/
             '''
             echo "Copying Dockerfile to project root..."
             sh '''
-                cp dockerfiles-repo/dockerfiles/archetypes/backend/Dockerfile .
+                cp'config-repo/dockerfiles/archetypes/backend/Dockerfile .
                 cp .dockerignore .
                 if [ ! -f Dockerfile ]; then
                     echo "Error: Dockerfile not found after copy."
@@ -203,8 +204,8 @@ def call(Map params) {
             echo "Dockerfile setup completed."
             sh '''
                 ls -la Dockerfile
-                rm -rf dockerfiles-repo || echo "No dockerfiles-repo directory to remove"
-                rm -rf dockerfiles-repo@* || echo "No dockerfiles-repo@tmp directory to remove"
+                rm -rf'config-repo || echo "No'config-repo directory to remove"
+                rm -rf'config-repo@* || echo "No'config-repo@tmp directory to remove"
                 ls -la
             '''
         }
@@ -301,8 +302,9 @@ def call(Map params) {
 
         stage('Post declarative action') {
             echo "Cleaning up temporary files..."
-            sh 'rm -f app.toml .env'
-            sh 'rm -rf config-repo'
+            sh 'rm -f app.toml .env || echo "No temporary files to remove"'
+            sh 'rm -rf config-repo || echo "No config-repo directory to remove"'
+            sh 'rm -rf properties-repo || echo "No properties-repo directory to remove"'
             echo "Cleanup completed"
         }
     }
