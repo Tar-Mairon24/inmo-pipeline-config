@@ -146,31 +146,26 @@ def call(Map params) {
         stage('Health Check') {
             script {
                 echo "Running health check..."
-                
-                echo "Running health check..."
         
-                sh '''
-                    echo "=== Container status before health check ==="
+                sh '''          
                     docker ps | grep inmo-backend || echo "No inmo-backend container running"
                     
-                    echo "=== Container logs ==="
-                    docker logs inmo-backend --tail=20 || echo "Could not get container logs"
-                    
-                    echo "=== Health check attempts ==="
-                    for i in {1..5}; do
+                    docker logs inmo-backend || echo "Could not get container logs"
+                               
+                    i=1
+                    while [ $i -le 5 ]; do
                         echo "Health check attempt $i/5..."
                         
-                        # Check if container is still running
                         if ! docker ps | grep -q "inmo-backend.*Up"; then
                             echo "Container is not running"
                             docker ps -a | grep inmo-backend
                             docker logs inmo-backend --tail=50
                             exit 1
                         fi
-                        
-                        # Try health check with curl (more reliable than wget)
-                        if curl -f -s --connect-timeout 5 --max-time 10 "http://localhost:3000/api/v1/health"; then
-                            curl -s "http://localhost:3000/api/v1/health" || echo "Could not get response body"
+                        if curl -f -s --connect-timeout 5 --max-time 10 "http://172.19.0.2:3000/api/v1/health"; then
+                            echo "Health check passed!"
+                            echo "Response:"
+                            curl -s "http://172.19.0.2:3000/api/v1/health" || echo "Could not get response body"
                             break
                         elif [ $i -eq 5 ]; then
                             echo "Health check failed after 5 attempts"
@@ -182,7 +177,11 @@ def call(Map params) {
                             echo "Attempt $i failed, waiting 10 seconds..."
                             sleep 10
                         fi
+                        
+                        i=$((i + 1))
                     done
+                    
+                    echo "✅ Health check completed successfully"
                 '''
                     }
                 }
