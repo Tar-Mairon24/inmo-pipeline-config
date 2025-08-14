@@ -180,20 +180,19 @@ def call(Map params) {
                     credentialsId: 'Github_Token'
                 ]],
                 extensions: [
-                    [$class: 'RelativeTargetDirectory', relativeTargetDir: 'config-repo']
+                    [$class: 'RelativeTargetDirectory', relativeTargetDir:  'config-repo']
                 ]
             ])
 
             echo "Dockerfiles repository checked out."
             sh '''
                 ls -la
-                echo ""
-                echo 'config-repo/:"
-                ls -la'config-repo/dockerfiles/archetypes/backend/
+                echo  "config-repo/:"
+                ls -la config-repo/dockerfiles/archetypes/backend/
             '''
             echo "Copying Dockerfile to project root..."
             sh '''
-                cp'config-repo/dockerfiles/archetypes/backend/Dockerfile .
+                cp config-repo/dockerfiles/archetypes/backend/Dockerfile .
                 cp .dockerignore .
                 if [ ! -f Dockerfile ]; then
                     echo "Error: Dockerfile not found after copy."
@@ -204,8 +203,8 @@ def call(Map params) {
             echo "Dockerfile setup completed."
             sh '''
                 ls -la Dockerfile
-                rm -rf'config-repo || echo "No'config-repo directory to remove"
-                rm -rf'config-repo@* || echo "No'config-repo@tmp directory to remove"
+                rm -rf config-repo || echo "No config-repo directory to remove"
+                rm -rf config-repo@* || echo "No config-repo@tmp directory to remove"
                 ls -la
             '''
         }
