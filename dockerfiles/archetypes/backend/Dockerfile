@@ -1,5 +1,7 @@
 FROM golang:1.24-alpine AS builder
 
+RUN apk --no-cache add ca-certificates tzdata
+
 WORKDIR /app
 
 COPY go.mod go.sum ./
