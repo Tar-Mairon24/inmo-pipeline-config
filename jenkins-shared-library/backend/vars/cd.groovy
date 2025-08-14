@@ -136,9 +136,10 @@ def call(Map params) {
                 echo "Running Docker Compose"
                 
                 sh '''
-                    ls -la config-repo/composeYamls/archetypes/backend/compose.yml || echo "No compose.yml found in config-repo/composeYamls/archetypes/backend/"
+                    docker network create inmo-app --driver bridge || echo "Network inmo-app already exists"
                     docker-compose down || echo "No existing Docker Compose to down"
                     docker-compose up -d
+                    docker-compose ps || echo "No containers running"
                     echo "Docker Compose started successfully."
                 '''
             }
