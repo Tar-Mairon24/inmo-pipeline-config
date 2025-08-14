@@ -162,7 +162,7 @@ def call(Map params) {
                             docker logs inmo-backend --tail=50
                             exit 1
                         fi
-                        if curl -f -s --connect-timeout 5 --max-time 10 "http://172.19.0.2:3000/api/v1/health"; then
+                        if curl -f --connect-timeout 5 --max-time 10 "http://172.19.0.2:3000/api/v1/health"; then
                             echo "Health check passed!"
                             echo "Response:"
                             curl -s "http://172.19.0.2:3000/api/v1/health" || echo "Could not get response body"
@@ -181,7 +181,7 @@ def call(Map params) {
                         i=$((i + 1))
                     done
                     
-                    echo "✅ Health check completed successfully"
+                    echo "Health check completed successfully"
                 '''
                     }
                 }
