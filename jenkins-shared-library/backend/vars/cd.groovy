@@ -136,7 +136,7 @@ def call(Map params) {
                 sh '''
                     docker network create inmo-app --driver bridge || echo "Network inmo-app already exists"
                     JENKINS_CONTAINER=$(hostname)
-                    docker network connect inmo-app $JENKINS_CONTAINER || echo "Failed to connect
+                    docker network connect inmo-app $JENKINS_CONTAINER || echo "Failed to connect"
                     docker-compose down || echo "No existing Docker Compose to down"
                     docker-compose up -d
                     docker-compose ps || echo "No containers running"
