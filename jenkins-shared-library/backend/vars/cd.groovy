@@ -22,8 +22,6 @@ def call(Map params) {
                 def dockerBinPath = "${dockerHome}/bin"
                 
                 sh """
-                    apt-get update && apt-get install -y wget curl || echo "Could not install wget/curl via apt"
-
                     echo "Installing Docker Compose..."
                     if ! command -v docker-compose >/dev/null 2>&1; then
                         echo "Docker Compose not found, installing..."
@@ -149,19 +147,45 @@ def call(Map params) {
             script {
                 echo "Running health check..."
                 
-                def healthCheckUrl = "http://localhost:3000/api/v1/health"
-                
-                sh """
-                    sleep 10
-                    if ! wget --no-verbose --tries=5 --spider "${healthCheckUrl}"; then
-                        echo "Health check failed for ${healthCheckUrl}"
-                        error "Service is not healthy"
-                    else
-                        echo "Health check passed for ${healthCheckUrl}"
-                    fi
-                """
-            }
-        }
+                echo "Running health check..."
+        
+                sh '''
+                    echo "=== Container status before health check ==="
+                    docker ps | grep inmo-backend || echo "No inmo-backend container running"
+                    
+                    echo "=== Container logs ==="
+                    docker logs inmo-backend --tail=20 || echo "Could not get container logs"
+                    
+                    echo "=== Health check attempts ==="
+                    for i in {1..5}; do
+                        echo "Health check attempt $i/5..."
+                        
+                        # Check if container is still running
+                        if ! docker ps | grep -q "inmo-backend.*Up"; then
+                            echo "Container is not running"
+                            docker ps -a | grep inmo-backend
+                            docker logs inmo-backend --tail=50
+                            exit 1
+                        fi
+                        
+                        # Try health check with curl (more reliable than wget)
+                        if curl -f -s --connect-timeout 5 --max-time 10 "http://localhost:3000/api/v1/health"; then
+                            curl -s "http://localhost:3000/api/v1/health" || echo "Could not get response body"
+                            break
+                        elif [ $i -eq 5 ]; then
+                            echo "Health check failed after 5 attempts"
+                            docker ps -a | grep inmo-backend
+                            docker logs inmo-backend --tail=50
+                            docker port inmo-backend || echo "No port mapping found"
+                            exit 1
+                        else
+                            echo "Attempt $i failed, waiting 10 seconds..."
+                            sleep 10
+                        fi
+                    done
+                '''
+                    }
+                }
 
         stage('Post actions') {
             script {
@@ -170,6 +194,7 @@ def call(Map params) {
                 sh 'rm .env || echo "No .env file to remove"'
                 sh 'rm -rf config-repo* || echo "No config-repo directory to remove"'
                 sh 'rm -rf properties-repo* || echo "No properties-repo directory to remove"'
+                sh 'rm .env || echo "No .env file to remove"'
                 
                 echo "Post actions completed successfully."
             }

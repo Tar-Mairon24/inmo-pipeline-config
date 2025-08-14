@@ -3,7 +3,7 @@ services:
     container_name: inmo-backend
     image: tarmairon24/inmo-backend:latest
     ports:
-      - "3000:3000"
+      - "3000:8080"
     environment:
       DB_HOST: ${DATABASE_HOST}
       DB_PORT: ${DATABASE_PORT}
