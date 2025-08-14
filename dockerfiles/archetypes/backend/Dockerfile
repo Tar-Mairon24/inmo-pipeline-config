@@ -13,6 +13,8 @@ RUN go build -o main cmd/main.go
 
 FROM alpine:latest
 
+RUN apk --no-cache add ca-certificates tzdata
+
 WORKDIR /app
 
 RUN adduser -D -s /bin/sh appuser
