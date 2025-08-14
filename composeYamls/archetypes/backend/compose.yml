@@ -11,6 +11,7 @@ services:
       DB_PASSWORD: ${DATABASE_PASSWORD}
       DB_NAME: ${DATABASE_NAME}
       SERVER_PORT: ${API_SERVER_PORT}
+      SERVER_TIMEZONE: ${API_SERVER_TIMEZONE}
     networks:
       - inmo-app
     restart: unless-stopped
