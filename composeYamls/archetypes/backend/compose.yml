@@ -12,6 +12,9 @@ services:
       DB_NAME: ${DATABASE_NAME}
       SERVER_PORT: ${API_SERVER_PORT}
       SERVER_TIMEZONE: ${API_SERVER_TIMEZONE}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION_HOURS: ${JWT_EXPIRATION_HOURS}
+
     networks:
       - inmo-app
     restart: unless-stopped

@@ -97,6 +97,43 @@ def call(Map params) {
             }
         }
 
+        stage('Replace Secrets') {
+            script {
+                echo "Replacing credential placeholders with actual values..."
+                
+                withCredentials([
+                    string(credentialsId: 'dev_db_host', variable: 'DEV_DB_HOST'),
+                    string(credentialsId: 'dev_db_password', variable: 'DEV_DB_PASSWORD'),
+                    string(credentialsId: 'dev_jwt_secret', variable: 'JWT_SECRET')   
+                ]){
+                    sh '''
+                        if [ ! -f .env ]; then
+                            echo "ERROR: .env not found!"
+                            exit 1
+                        fi
+                        if grep -q "dev_db_host" .env; then
+                            sed -i "s/dev_db_host/${DEV_DB_HOST}/g" .env
+                        else
+                            echo "Warning: dev_db_host placeholder not found"
+                        fi
+                        
+                        if grep -q "dev_db_pasword" .env; then
+                            sed -i "s/dev_db_pasword/${DEV_DB_PASSWORD}/g" .env
+                        else
+                            echo "Warning: dev_db_pasword placeholder not found"
+                        fi
+
+                        if grep -q "dev_jwt_secret" .env; then
+                            sed -i "s/dev_jwt_secret/${JWT_SECRET}/g" .env
+                        else
+                            echo "Warning: dev_jwt_secret placeholder not found"
+                        fi
+                    '''
+                }
+                
+            }
+        }
+
         stage('Prepare Go Modules') {
             echo "Downloading Go module dependencies..."
             sh '''

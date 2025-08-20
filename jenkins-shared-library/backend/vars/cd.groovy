@@ -84,7 +84,8 @@ def call(Map params) {
                 
                 withCredentials([
                     string(credentialsId: 'dev_db_host', variable: 'DEV_DB_HOST'),
-                    string(credentialsId: 'dev_db_password', variable: 'DEV_DB_PASSWORD')    
+                    string(credentialsId: 'dev_db_password', variable: 'DEV_DB_PASSWORD'),
+                    string(credentialsId: 'dev_jwt_secret', variable: 'JWT_SECRET')   
                 ]){
                     sh '''
                         if [ ! -f .env ]; then
@@ -101,6 +102,12 @@ def call(Map params) {
                             sed -i "s/dev_db_pasword/${DEV_DB_PASSWORD}/g" .env
                         else
                             echo "Warning: dev_db_pasword placeholder not found"
+                        fi
+
+                        if grep -q "dev_jwt_secret" .env; then
+                            sed -i "s/dev_jwt_secret/${JWT_SECRET}/g" .env
+                        else
+                            echo "Warning: dev_jwt_secret placeholder not found"
                         fi
                     '''
                 }
