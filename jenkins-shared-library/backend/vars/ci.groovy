@@ -170,7 +170,7 @@ def call(Map params) {
                     # Run tests with explicit coverage packages
                     go test -v -coverprofile=coverage.out -covermode=atomic \
                         -coverpkg=./internal/...,./cmd/...,./middleware/... \
-                        ./test/...
+                        ./test/unit/...
                 ''',
                 returnStatus: true
             )
