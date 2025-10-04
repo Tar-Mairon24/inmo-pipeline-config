@@ -111,8 +111,7 @@ def call(Map params) {
                         fi
                     '''
                 }
-
-                cat .env
+                sh 'cat .env'
             }
         }
 
