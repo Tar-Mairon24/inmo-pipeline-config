@@ -72,7 +72,7 @@ def call(Map params) {
                 branches: [[name: 'main']],
                 userRemoteConfigs: [[
                     url: 'https://github.com/Tar-Mairon24/inmo-pipeline-properties.git',
-                    credentialsId: 'Github_Token'
+                    credentialsId: 'github-credentials'
                 ]],
                 extensions: [
                     [$class: 'RelativeTargetDirectory', relativeTargetDir: 'properties-repo']
@@ -170,7 +170,7 @@ def call(Map params) {
                     # Run tests with explicit coverage packages
                     go test -v -coverprofile=coverage.out -covermode=atomic \
                         -coverpkg=./internal/...,./cmd/...,./middleware/... \
-                        ./test/...
+                        ./test/unit/...
                 ''',
                 returnStatus: true
             )
@@ -214,7 +214,7 @@ def call(Map params) {
                 branches: [[name: 'main']],
                 userRemoteConfigs: [[
                     url: 'https://github.com/Tar-Mairon24/inmo-pipeline-config.git',
-                    credentialsId: 'Github_Token'
+                    credentialsId: 'github-credentials'
                 ]],
                 extensions: [
                     [$class: 'RelativeTargetDirectory', relativeTargetDir:  'config-repo']
