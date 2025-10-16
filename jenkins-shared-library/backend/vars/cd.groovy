@@ -53,7 +53,7 @@ def call(Map params) {
                 branches: [[name: 'main']],
                 userRemoteConfigs: [[
                     url: 'https://github.com/Tar-Mairon24/inmo-pipeline-properties.git',
-                    credentialsId: 'Github_Token'
+                    credentialsId: 'github-credentials'
                 ]],
                 extensions: [
                     [$class: 'RelativeTargetDirectory', relativeTargetDir: 'properties-repo']
@@ -121,7 +121,7 @@ def call(Map params) {
                 branches: [[name: 'main']],
                 userRemoteConfigs: [[
                     url: 'https://github.com/Tar-Mairon24/inmo-pipeline-config.git',
-                    credentialsId: 'Github_Token'
+                    credentialsId: 'github-credentials'
                 ]],
                 extensions: [
                     [$class: 'RelativeTargetDirectory', relativeTargetDir: 'config-repo']
