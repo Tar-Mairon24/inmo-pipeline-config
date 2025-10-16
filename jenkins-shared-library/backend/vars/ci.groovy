@@ -281,7 +281,8 @@ def call(Map params) {
                                                     passwordVariable: 'DOCKERHUB_PASSWORD')]) {
                         sh '''
                             echo "Logging into Docker Hub..."
-                            echo "$DOCKERHUB_PASSWORD" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+                            docker login -u "$DOCKERHUB_USERNAME" --password "$DOCKERHUB_PASSWORD"
+                            echo "Docker Hub login successful"
                         '''
                     }
 
